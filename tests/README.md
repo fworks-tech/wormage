@@ -32,15 +32,11 @@ Seeds: `/?seed=4242` fixes terrain generation and AI jitter so combat tests are 
 | `combat.spec.ts` | firing, turn handoff, walking and arena bounds, weapon selection, pause/freeze, end turn |
 | `data.spec.ts` | result screen, match registration, history/ranking visibility, persistence after refresh |
 
-Visual regression baselines are generated per project (`desktop` / `mobile`) and live next to the specs in `tests/*-snapshots/`. Regenerate intentionally with:
-
-```bash
-npx playwright test --update-snapshots
-```
+Every spec runs twice, once per project (`desktop` / `mobile`). There are no visual baselines yet; the suite asserts engine state through the instrumentation hook instead. Visual baselines are planned for M1.
 
 ## Conventions
 
-- Each test clears localStorage in `addInitScript` so runs are isolated.
+- Playwright gives each test a fresh browser context, so localStorage starts empty. Specs that need stored data seed it in `addInitScript`.
 - Prefer `data-testid` selectors owned by the UI, not CSS structure.
 - Never assert on animation timing; wait for a state predicate (`waitForFunction`) or a test id.
 - Failures keep traces and screenshots in `test-results/`.

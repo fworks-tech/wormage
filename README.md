@@ -22,7 +22,7 @@ The genre also forces the separation this project is built around: the simulatio
 | Ranking / history state | TanStack Query 5 |
 | HTTP client | Axios |
 | Network mocks | MSW 2 |
-| E2E + visual regression | Playwright |
+| E2E | Playwright |
 | Build | Vite 6 |
 
 No game engine, no physics library, no third-party art. Terrain, worms, explosions and sound are generated at runtime.
@@ -52,7 +52,7 @@ npm run test:e2e       # Playwright (uses installed Chrome)
 | End turn | `E` | End turn |
 | Pause | `P` / `Esc` | Pause |
 
-Three worms per side, 100 HP each. Destroy the other team before the turns run out. Falling into water is fatal; long falls hurt. Self-damage is on, as tradition demands.
+Three worms per side, 100 HP each. Wipe out the other team to win. The turn timer ends your turn, not the match. Falling into water is fatal; long falls hurt. Self-damage is on, as tradition demands.
 
 Weapons: **Bazooka** (unlimited, 42 dmg), **Grenade** (3 bounces, 3s fuse), **Shotgun** (4 flat shots), **Dynamite** (2, 4.2s fuse, huge crater).
 
@@ -89,7 +89,7 @@ Options include a **Demo network** switch (normal / slow / empty / error) to exe
 
 ## Testing
 
-Playwright drives the real UI against the dev server and asserts authoritative state through a documented instrumentation hook (`window.__WORMAGE__.snapshot()`), so tests do not scrape pixels for logic. Visual baselines cover the menu, a stable arena state and the result screen.
+Playwright drives the real UI against the dev server and asserts authoritative state through a documented instrumentation hook (`window.__WORMAGE__.snapshot()`), so tests do not scrape pixels for logic. Eleven specs run on desktop and mobile viewports. Visual baselines are not written yet; they are planned for M1.
 
 ```bash
 npm run test:e2e
