@@ -83,6 +83,7 @@ export function simulateShot(
   wind: number,
   fuse: number | null = null,
   bounces = false,
+  bodies: ReadonlyArray<{ x: number; y: number }> = [],
 ): SimResult {
   const def = WEAPONS[weapon];
   const speed = def.speedMin + (def.speedMax - def.speedMin) * power;
@@ -99,6 +100,10 @@ export function simulateShot(
     vx += wind * def.windScale * WIND_FACTOR * dt;
     x += vx * dt;
     y += vy * dt;
+    // Match the engine: the first worm in the path takes the hit.
+    if (bodies.some((b) => Math.hypot(b.x - x, b.y - 13 - y) < 14 + WORM.radius * 0.4)) {
+      return { x, y, valid: y < WATER_Y - 12 };
+    }
     if (x < 0 || x > 1280 || y > WATER_Y) return { x, y, valid: false };
     if (terrain.isSolid(x, y)) {
       if (!bounces) return { x, y, valid: y < WATER_Y - 12 };
@@ -131,6 +136,7 @@ export function planAiShot(
   wind: number,
   difficulty: { angleError: number; powerError: number },
   rng: () => number,
+  bodies: ReadonlyArray<{ x: number; y: number }> = [],
 ): ShotPlan {
   const facingLeft = targetX < wormX;
   const base = facingLeft ? -Math.PI : 0;
@@ -144,7 +150,7 @@ export function planAiShot(
       const angle = base + mirror * offset;
       const startX = wormX + Math.cos(angle) * 18;
       const startY = wormY - 14 + Math.sin(angle) * 18;
-      const result = simulateShot(terrain, startX, startY, angle, power, 'bazooka', wind);
+      const result = simulateShot(terrain, startX, startY, angle, power, 'bazooka', wind, null, false, bodies);
       if (!result.valid) continue;
       const dx = result.x - targetX;
       const dy = result.y - targetY;
@@ -250,6 +256,7 @@ function planProjectile(
   const mirror = facingLeft ? 1 : -1;
   const offsets = [0.22, 0.5, 0.75, 1.0, 1.22, 1.42];
   const retreatX = chooseRetreat(terrain, pos, enemies, null, 0, RETREAT_SECONDS) ?? pos.x;
+  const bodies = worms.filter((w) => w.id !== worm.id);
   let best: Candidate | null = null;
 
   for (const offset of offsets) {
@@ -258,7 +265,7 @@ function planProjectile(
     for (const power of powers) {
       const muzzleX = pos.x + Math.cos(angle) * 18;
       const muzzleY = pos.y - 14 + Math.sin(angle) * 18;
-      const result = simulateShot(terrain, muzzleX, muzzleY, angle, power, weapon, wind, def.fuse, def.bounces);
+      const result = simulateShot(terrain, muzzleX, muzzleY, angle, power, weapon, wind, def.fuse, def.bounces, bodies);
       if (!result.valid) continue;
       const score = damageScore(result.x, result.y, weapon, worm, worms);
       if (!best || score > best.score) {

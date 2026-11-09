@@ -74,7 +74,7 @@ The projectile and settle phases also run a 3 s retreat window (`RETREAT_SECONDS
 
 ## 5. AI
 
-`planAiTurn` plans the whole turn. It builds walkable firing positions within the part of the turn it can spend walking, then evaluates bazooka, grenade, shotgun and dynamite from each one by running the **real** projectile integrator (`simulateShot`). A shot is scored by damage to enemies minus a penalty for friendly and self damage; dynamite is only considered when the worm can leave its blast before the 2.2 s fuse ends. The plan also picks a retreat spot within the 3 s window, away from the enemy and outside that blast.
+`planAiTurn` plans the whole turn. It builds walkable firing positions within the part of the turn it can spend walking, then evaluates bazooka, grenade, shotgun and dynamite from each one by running the **real** projectile integrator (`simulateShot`). The simulation stops at the first worm in the flight path, so an ally in the way is scored as friendly damage instead of an open shot. A shot is scored by damage to enemies minus a penalty for friendly and self damage; dynamite is only considered when the worm can leave its blast before the 2.2 s fuse ends. The plan also picks a retreat spot within the 3 s window, away from the enemy and outside that blast.
 
 The engine walks the AI worm to `fireX`, fires the chosen weapon, then steers the same worm to `retreatX` while the retreat window is open. If the path is blocked or the turn clock runs low, it falls back to the legacy `planAiShot` bazooka solution from where it stands. Difficulty jitter is applied to projectile angle and power; a dynamite drop has neither.
 

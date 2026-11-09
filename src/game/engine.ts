@@ -621,6 +621,9 @@ export class GameEngine {
       this.moveDir = 0;
       const target = this.nearestEnemy(worm);
       if (target) {
+        const bodies = this.teams.flatMap((team) =>
+          team.worms.filter((w) => w.alive && w.id !== worm.id).map((w) => ({ x: w.x, y: w.y })),
+        );
         const shot = planAiShot(
           this.terrain,
           worm.x,
@@ -630,6 +633,7 @@ export class GameEngine {
           this.wind,
           DIFFICULTY[this.config.difficulty],
           this.rng,
+          bodies,
         );
         this.weapon = 'bazooka';
         this.aimAt(shot.angle, shot.power);
