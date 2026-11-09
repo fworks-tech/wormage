@@ -327,7 +327,7 @@ function damageScore(x: number, y: number, weapon: WeaponId, shooter: AiWorm, wo
  * Best walkable spot within the window, away from the enemy and (when given)
  * outside a blast. Returns null when no spot satisfies the blast constraint.
  */
-function chooseRetreat(
+export function chooseRetreat(
   terrain: AiTerrain,
   from: { x: number; y: number },
   enemies: AiWorm[],
@@ -346,6 +346,7 @@ function chooseRetreat(
 
     const blastDistance = blast ? Math.hypot(x - blast.x, ground - 13 - blast.y) : Infinity;
     if (blastDistance < minBlastDistance) continue;
+    if (!walkablePath(terrain, from, x)) continue;
 
     const enemyDistance = enemies.length
       ? Math.min(...enemies.map((e) => Math.hypot(x - e.x, ground - 13 - e.y)))
@@ -360,6 +361,25 @@ function chooseRetreat(
   }
 
   return bestX;
+}
+
+/**
+ * True when the worm can walk from `from` to `toX` without hitting a wall or
+ * dropping into water. Checks the body height the engine walks at.
+ */
+function walkablePath(terrain: AiTerrain, from: { x: number; y: number }, toX: number): boolean {
+  const dir = Math.sign(toX - from.x);
+  let y = from.y;
+  for (let x = from.x; dir !== 0 && (dir > 0 ? x < toX : x > toX); ) {
+    x = dir > 0 ? Math.min(x + 4, toX) : Math.max(x - 4, toX);
+    // shortcut: a ledge counts as blocked rather than measuring the fall, so
+    // the AI may skip a safe drop-down retreat; revisit with a real walk sim.
+    const ground = terrain.groundY(x, y - 18, 260);
+    if (ground === null || ground > WATER_Y - 30) return false;
+    if (terrain.isSolid(x, ground - 12)) return false;
+    y = ground;
+  }
+  return true;
 }
 
 function range(start: number, end: number, step: number): number[] {

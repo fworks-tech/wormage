@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { aimPoint } from '../src/game/aim';
-import { planAiTurn, simulateShot } from '../src/game/ai';
-import { AIM, WEAPONS, WORM } from '../src/game/config';
+import { chooseRetreat, planAiTurn, simulateShot } from '../src/game/ai';
+import { AIM, RETREAT_SECONDS, WEAPONS, WORM } from '../src/game/config';
 
 /** Flat ground at y = 500, or a wall from x = wallX. No canvas needed. */
 const terrain = (wallX = Infinity) => ({
@@ -73,6 +73,41 @@ const impactOf = (turn: NonNullable<ReturnType<typeof plan>>, targetX: number) =
   );
   return impact.valid ? Math.hypot(impact.x - targetX, impact.y - (500 - 13)) : Infinity;
 };
+
+/** Flat ground at y = 500 with solid vertical walls spanning body height. */
+const walled = (...walls: Array<[number, number]>) => ({
+  isSolid: (x: number, y: number) => y >= 500 || walls.some(([from, to]) => x >= from && x <= to),
+  groundY: (_x: number, fromY: number, maxDown = 260) =>
+    fromY <= 500 && fromY + maxDown >= 500 ? 500 : null,
+});
+
+const enemy = { id: 'b', teamId: 1, x: 440, y: 500 };
+
+test('the AI never retreats through a wall to escape its own blast', () => {
+  // The best blast-safe spot is left of the wall, but the worm cannot get there.
+  const spot = chooseRetreat(
+    walled([300, 330]),
+    { x: 400, y: 500 },
+    [enemy],
+    { x: 400, y: 492 },
+    95,
+    RETREAT_SECONDS,
+  );
+  expect(spot).not.toBeNull();
+  expect(spot!).toBeGreaterThan(400);
+});
+
+test('the AI finds no retreat spot when every blast-safe spot is walled off', () => {
+  const spot = chooseRetreat(
+    walled([300, 330], [470, 500]),
+    { x: 400, y: 500 },
+    [enemy],
+    { x: 400, y: 492 },
+    95,
+    RETREAT_SECONDS,
+  );
+  expect(spot).toBeNull();
+});
 
 test('AI picks a weapon and a firing spot whose real shot lands on the enemy', () => {
   const turn = plan(200, 900);
