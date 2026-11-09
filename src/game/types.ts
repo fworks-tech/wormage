@@ -25,6 +25,8 @@ export function configKey(config: Pick<MatchConfig, 'turnSeconds' | 'wind' | 'di
 
 export interface WeaponDef {
   id: WeaponId;
+  /** `drop` weapons are placed at the worm's feet and have no aim reticle. */
+  kind: 'projectile' | 'drop';
   name: string;
   glyph: string;
   ammo: number | null;

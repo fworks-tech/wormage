@@ -29,13 +29,18 @@ export const AIM = {
   min: -3.04,
   max: -0.1,
   rate: 1.35,
+  radius: 130,
 } as const;
 
 export const CHARGE_SECONDS = 1.1;
 
+/** Movement window after firing, before the turn passes. */
+export const RETREAT_SECONDS = 3;
+
 export const WEAPONS: Record<WeaponId, WeaponDef> = {
   bazooka: {
     id: 'bazooka',
+    kind: 'projectile',
     name: 'Bazooka',
     glyph: '➤',
     ammo: null,
@@ -54,6 +59,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
   },
   grenade: {
     id: 'grenade',
+    kind: 'projectile',
     name: 'Grenade',
     glyph: '●',
     ammo: 3,
@@ -72,6 +78,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
   },
   shotgun: {
     id: 'shotgun',
+    kind: 'projectile',
     name: 'Shotgun',
     glyph: '╾',
     ammo: 4,
@@ -90,6 +97,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
   },
   dynamite: {
     id: 'dynamite',
+    kind: 'drop',
     name: 'Dynamite',
     glyph: '▮',
     ammo: 2,
@@ -100,11 +108,11 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     speedMax: 0,
     gravityScale: 1,
     windScale: 0,
-    fuse: 4.2,
+    fuse: 2.2,
     bounces: false,
     life: null,
     color: 0xff6b5b,
-    blurb: 'Drops at your feet. Run. Four second fuse.',
+    blurb: 'Drops at your feet. Run. Two second fuse.',
   },
 };
 
