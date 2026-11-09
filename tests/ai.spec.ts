@@ -30,6 +30,17 @@ test('reticle never leaves the radius, even aiming along the floor', () => {
   expect(distance).toBeLessThanOrEqual(AIM.radius + 1);
 });
 
+test('a shot stops on the first worm in its path', () => {
+  const open = simulateShot(terrain(), 418, 486, 0, 1, 'shotgun', 0);
+  const blocked = simulateShot(terrain(), 418, 486, 0, 1, 'shotgun', 0, null, false, [
+    { x: 700, y: 500 },
+  ]);
+  expect(open.x).toBeGreaterThan(900);
+  expect(blocked.x).toBeGreaterThan(660);
+  expect(blocked.x).toBeLessThan(700);
+  expect(blocked.valid).toBe(true);
+});
+
 const ammo = { bazooka: Infinity, grenade: 3, shotgun: 4, dynamite: 2 } as const;
 
 const plan = (wormX: number, enemyX: number) => {
@@ -88,5 +99,41 @@ test('AI drops dynamite at point-blank only when it can escape the blast', () =>
   expect(turn!.weapon).toBe('dynamite');
   expect(Math.abs(turn!.retreatX - turn!.fireX)).toBeGreaterThan(
     WEAPONS.dynamite.radius + WORM.radius,
+  );
+});
+
+test('the AI never plans a shot through an ally', () => {
+  const worm = { id: 'a', teamId: 0, x: 900, y: 500 };
+  const ally = { id: 'c', teamId: 0, x: 600, y: 500 };
+  const enemy = { id: 'b', teamId: 1, x: 200, y: 500 };
+  const turn = planAiTurn({
+    terrain: terrain(),
+    worm,
+    worms: [worm, ally, enemy],
+    ammo: { ...ammo },
+    wind: 0,
+    timeLeft: 45,
+    difficulty: { angleError: 0, powerError: 0 },
+    rng: () => 0.5,
+  });
+  expect(turn).not.toBeNull();
+  // The enemy is out of dynamite walking range, so the plan must be a projectile.
+  expect(turn!.weapon).not.toBe('dynamite');
+
+  const def = WEAPONS[turn!.weapon];
+  const impact = simulateShot(
+    terrain(),
+    turn!.fireX + Math.cos(turn!.angle) * 18,
+    500 - 14 + Math.sin(turn!.angle) * 18,
+    turn!.angle,
+    turn!.power,
+    turn!.weapon,
+    0,
+    def.fuse,
+    def.bounces,
+    [ally, enemy],
+  );
+  expect(Math.hypot(impact.x - ally.x, impact.y - (ally.y - 13))).toBeGreaterThan(
+    14 + WORM.radius * 0.4,
   );
 });
