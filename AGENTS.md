@@ -47,6 +47,7 @@ Playwright uses the installed Chrome (`channel: 'chrome'`); do not download brow
 | `src/game/types.ts` | shared contracts (`GameSnapshot`, `WeaponDef`, `GameEvent`…) |
 | `src/game/engine.ts` | turn state machine, worm physics, projectiles, damage, scoring, AI scheduling |
 | `src/game/ai.ts` | forward simulation (`simulateShot`), shot planner, angle helpers |
+| `src/game/aim.ts` | bounded reticle: marches the aim ray to `AIM.radius` or the first terrain hit |
 | `src/game/renderer.ts` | Pixi scene, worms, particles, aim preview |
 | `src/ui/` | React screens and HUD; `GameView` owns the loop and input |
 | `src/state/`, `src/api/`, `src/mocks/` | persistence, HTTP client and queries, MSW fixtures |
@@ -56,7 +57,7 @@ Playwright uses the installed Chrome (`channel: 'chrome'`); do not download brow
 
 - **Engine owns the truth.** The renderer only reads. React gets throttled snapshots (~10 Hz) and calls engine actions through refs; it never mutates worms or projectiles.
 - **The simulation stays renderer-free.** `src/game/` imports no React; only `terrain.ts` and `renderer.ts` may touch a DOM canvas.
-- **One physics source.** AI, preview and combat all use `simulateShot` and the constants in `config.ts`. Never re-declare speeds, gravity or wind scales in another file.
+- **One physics source.** AI and the aim preview run `simulateShot`; combat integrates with the same constants in `config.ts`. Never re-declare speeds, gravity or wind scales in another file.
 - **Numbers live in `config.ts`.** Balance changes should not touch `engine.ts`, the renderer or React.
 - **Weapons are data.** Add a `WeaponDef` to `WEAPONS` and `WEAPON_ORDER`; keep its physics in the same shape as the others.
 - **The renderer is read-only and disposable.** If it disappears, the match still resolves.
