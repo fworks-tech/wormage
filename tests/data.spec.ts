@@ -7,16 +7,16 @@ test('a finished match is registered once and shows in history and ranking', asy
     if (!window.sessionStorage.getItem('e2e-cleared')) {
       window.sessionStorage.setItem('e2e-cleared', '1');
       window.localStorage.clear();
-      window.localStorage.setItem('wormageddon.netScenario.v1', JSON.stringify('normal'));
+      window.localStorage.setItem('wormage.netScenario.v1', JSON.stringify('normal'));
     }
   });
   await page.goto('/?seed=777');
   await page.getByTestId('btn-play').click();
   await expect(page.getByTestId('arena').locator('canvas')).toBeVisible();
-  await page.waitForFunction(() => Boolean((window as never as { __WORMAGEDDON__?: unknown }).__WORMAGEDDON__));
+  await page.waitForFunction(() => Boolean((window as never as { __WORMAGE__?: unknown }).__WORMAGE__));
 
   await page.evaluate(() => {
-    (window as never as { __WORMAGEDDON__: { engine: Engine } }).__WORMAGEDDON__.engine.surrender();
+    (window as never as { __WORMAGE__: { engine: Engine } }).__WORMAGE__.engine.surrender();
   });
 
   await expect(page.getByTestId('result-screen')).toBeVisible({ timeout: 10_000 });
@@ -42,9 +42,9 @@ test('a finished match is registered once and shows in history and ranking', asy
 test('the result survives a refresh through the persisted last result', async ({ page }) => {
   await page.goto('/');
   await page.getByTestId('btn-play').click();
-  await page.waitForFunction(() => Boolean((window as never as { __WORMAGEDDON__?: unknown }).__WORMAGEDDON__));
+  await page.waitForFunction(() => Boolean((window as never as { __WORMAGE__?: unknown }).__WORMAGE__));
   await page.evaluate(() => {
-    (window as never as { __WORMAGEDDON__: { engine: Engine } }).__WORMAGEDDON__.engine.surrender();
+    (window as never as { __WORMAGE__: { engine: Engine } }).__WORMAGE__.engine.surrender();
   });
   await expect(page.getByTestId('result-screen')).toBeVisible({ timeout: 10_000 });
 

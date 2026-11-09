@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * Playwright runs against the Vite dev server so the MSW worker and the
- * `window.__WORMAGEDDON__` instrumentation are available.
+ * `window.__WORMAGE__` instrumentation are available.
  * `channel: 'chrome'` uses an installed Chrome instead of downloading browsers.
  */
 export default defineConfig({

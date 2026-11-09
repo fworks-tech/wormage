@@ -1,9 +1,9 @@
 import { DEFAULT_SETTINGS, sanitizeSettings } from '../game/config';
 import type { GameSettings } from '../game/types';
 
-const SETTINGS_KEY = 'wormageddon.settings.v1';
-const LAST_RESULT_KEY = 'wormageddon.lastResult.v1';
-const PLAYER_KEY = 'wormageddon.player.v1';
+const SETTINGS_KEY = 'wormage.settings.v1';
+const LAST_RESULT_KEY = 'wormage.lastResult.v1';
+const PLAYER_KEY = 'wormage.player.v1';
 
 export function loadSettings(): GameSettings {
   try {

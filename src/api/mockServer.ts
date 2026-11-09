@@ -7,8 +7,8 @@ import type {
   Paginated,
 } from './types';
 
-const DB_KEY = 'wormageddon.mockdb.v1';
-const SCENARIO_KEY = 'wormageddon.netScenario.v1';
+const DB_KEY = 'wormage.mockdb.v1';
+const SCENARIO_KEY = 'wormage.netScenario.v1';
 
 interface Db {
   matches: MatchRecord[];
