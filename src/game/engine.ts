@@ -1,0 +1,632 @@
+import {
+  AIM,
+  CHARGE_SECONDS,
+  DIFFICULTY,
+  GRAVITY,
+  PROJECTILE_GRAVITY,
+  TEAMS,
+  WATER_Y,
+  WEAPONS,
+  WIND_ACCEL,
+  WORM,
+  worldClamp,
+} from './config';
+import { Terrain, mulberry32 } from './terrain';
+import { clampAngle, mirrorAngle, planAiShot } from './ai';
+import { configKey } from './types';
+import type {
+  EndReason,
+  GameEvent,
+  GameSnapshot,
+  MatchConfig,
+  Phase,
+  Projectile,
+  Team,
+  WeaponId,
+  Worm,
+} from './types';
+
+const WORM_NAMES = [
+  ['Sarge', 'Biscuit', 'Mags'],
+  ['Crank', 'Nyx', 'Dust'],
+];
+
+const PROJECTILE_LIFE: Partial<Record<WeaponId, number>> = { shotgun: 0.34 };
+
+export class GameEngine {
+  readonly config: MatchConfig;
+  readonly terrain: Terrain;
+  readonly teams: Team[];
+  phase: Phase = 'aim';
+  turn = 1;
+  activeTeam = 0;
+  activeWormId: string | null = null;
+  wind = 0;
+  timeLeft: number;
+  power = 0;
+  charging = false;
+  weapon: WeaponId = 'bazooka';
+  moveDir: -1 | 0 | 1 = 0;
+  events: GameEvent[] = [];
+  winnerTeam: number | null = null;
+  endReason: EndReason | null = null;
+  hasFired = false;
+  kills = [0, 0];
+  elapsed = 0;
+  aiThinking = false;
+
+  private projectiles: Projectile[] = [];
+  private settleTimer = 0;
+  private aiTimer = 0;
+  private aiPlanDone = false;
+  private jumpsLeft = WORM.maxJumpsPerTurn;
+  private projectileId = 0;
+  private readonly rng: () => number;
+  private readonly lastWormByTeam: Record<number, string> = {};
+
+  constructor(config: MatchConfig) {
+    this.config = config;
+    this.terrain = new Terrain(config.seed);
+    this.rng = mulberry32(config.seed ^ 0x9e3779b9);
+    this.timeLeft = config.turnSeconds;
+
+    this.teams = TEAMS.map((team, teamIndex) => {
+      const worms: Worm[] = [];
+      for (let i = 0; i < config.wormsPerTeam; i += 1) {
+        const x = teamIndex === 0 ? 120 + i * 95 : 1160 - i * 95;
+        const y = this.terrain.groundY(x, 120, WATER_Y - 120) ?? 470;
+        worms.push({
+          id: `t${teamIndex}-w${i}`,
+          name: WORM_NAMES[teamIndex][i % WORM_NAMES[teamIndex].length],
+          teamId: teamIndex,
+          x,
+          y,
+          vy: 0,
+          hp: WORM.maxHp,
+          maxHp: WORM.maxHp,
+          alive: true,
+          facing: teamIndex === 0 ? 1 : -1,
+          aimAngle: teamIndex === 0 ? -0.55 : mirrorAngle(-0.55),
+          onGround: true,
+          fallDistance: 0,
+          airborne: false,
+        });
+      }
+      return {
+        id: teamIndex,
+        name: team.name,
+        color: team.color,
+        accent: team.accent,
+        isAi: team.isAi,
+        worms,
+        ammo: {
+          bazooka: WEAPONS.bazooka.ammo ?? Infinity,
+          grenade: WEAPONS.grenade.ammo ?? 0,
+          shotgun: WEAPONS.shotgun.ammo ?? 0,
+          dynamite: WEAPONS.dynamite.ammo ?? 0,
+        },
+      };
+    });
+
+    this.beginTurn(true);
+  }
+
+  get configurationKey(): string {
+    return configKey(this.config);
+  }
+
+  get activeWorm(): Worm | null {
+    const team = this.teams[this.activeTeam];
+    return team.worms.find((w) => w.id === this.activeWormId) ?? null;
+  }
+
+  get activeAmmo(): Record<WeaponId, number> {
+    return this.teams[this.activeTeam].ammo;
+  }
+
+  get projectilesInFlight(): readonly Projectile[] {
+    return this.projectiles;
+  }
+
+  private beginTurn(first = false): void {
+    const team = this.teams[this.activeTeam];
+    const next = this.nextAliveWorm(team);
+    if (!next) {
+      this.finish(this.otherTeam(this.activeTeam), 'wipeout');
+      return;
+    }
+    this.activeWormId = next.id;
+    this.lastWormByTeam[team.id] = next.id;
+    this.timeLeft = this.config.turnSeconds;
+    this.phase = 'aim';
+    this.power = 0;
+    this.charging = false;
+    this.weapon = 'bazooka';
+    this.moveDir = 0;
+    this.hasFired = false;
+    this.jumpsLeft = WORM.maxJumpsPerTurn;
+    this.settleTimer = 0;
+    this.aiTimer = 1.25;
+    this.aiPlanDone = false;
+    this.aiThinking = team.isAi;
+    const maxWind = WIND_ACCEL[this.config.wind];
+    this.wind = first ? 0 : Math.round((this.rng() * 2 - 1) * maxWind);
+    this.events.push({ type: 'turn', teamId: team.id, wormId: next.id });
+  }
+
+  private nextAliveWorm(team: Team): Worm | null {
+    const currentIndex = team.worms.findIndex((w) => w.id === this.lastWormByTeam[team.id]);
+    for (let i = 1; i <= team.worms.length; i += 1) {
+      const candidate = team.worms[(currentIndex + i + team.worms.length) % team.worms.length];
+      if (candidate.alive) return candidate;
+    }
+    return null;
+  }
+
+  private otherTeam(teamId: number): number {
+    return teamId === 0 ? 1 : 0;
+  }
+
+  setMove(dir: -1 | 0 | 1): void {
+    this.moveDir = dir;
+  }
+
+  aimBy(delta: number): void {
+    const worm = this.activeWorm;
+    if (!worm || this.phase !== 'aim') return;
+    worm.aimAngle = clampAngle(worm.aimAngle + delta);
+    worm.facing = Math.cos(worm.aimAngle) >= 0 ? 1 : -1;
+  }
+
+  setAimFromPoint(x: number, y: number): void {
+    const worm = this.activeWorm;
+    if (!worm || this.phase !== 'aim') return;
+    const angle = Math.atan2(y - (worm.y - 14), x - worm.x);
+    worm.aimAngle = clampAngle(angle);
+    worm.facing = Math.cos(worm.aimAngle) >= 0 ? 1 : -1;
+  }
+
+  startCharge(): void {
+    if (this.phase !== 'aim' || this.teams[this.activeTeam].isAi || this.hasFired) return;
+    this.charging = true;
+    this.power = Math.max(this.power, 0);
+  }
+
+  releaseCharge(): void {
+    if (!this.charging) return;
+    this.charging = false;
+    this.fire();
+  }
+
+  selectWeapon(id: WeaponId): void {
+    if (this.phase !== 'aim') return;
+    const ammo = this.teams[this.activeTeam].ammo[id];
+    if (WEAPONS[id].ammo !== null && ammo <= 0) return;
+    this.weapon = id;
+  }
+
+  jump(): void {
+    const worm = this.activeWorm;
+    if (!worm || this.phase !== 'aim' || this.hasFired || this.jumpsLeft <= 0) return;
+    if (this.teams[this.activeTeam].isAi) return;
+    if (!worm.onGround) return;
+    worm.vy = -WORM.jumpVelocity;
+    worm.onGround = false;
+    worm.fallDistance = 0;
+    worm.airborne = true;
+    this.jumpsLeft -= 1;
+    this.events.push({ type: 'jump', x: worm.x, y: worm.y });
+  }
+
+  fire(): void {
+    const worm = this.activeWorm;
+    if (!worm || this.phase !== 'aim' || this.hasFired) return;
+    const team = this.teams[this.activeTeam];
+    const weapon = WEAPONS[this.weapon];
+    if (weapon.ammo !== null && team.ammo[this.weapon] <= 0) return;
+
+    const power = Math.max(0.12, this.power);
+    const angle = worm.aimAngle;
+    const speed = weapon.speedMin + (weapon.speedMax - weapon.speedMin) * power;
+
+    if (weapon.ammo !== null) team.ammo[this.weapon] -= 1;
+    this.hasFired = true;
+    this.charging = false;
+    this.phase = 'projectile';
+
+    if (this.weapon === 'dynamite') {
+      this.projectiles.push({
+        id: (this.projectileId += 1),
+        weapon: 'dynamite',
+        teamId: team.id,
+        x: worm.x,
+        y: worm.y - 8,
+        vx: 0,
+        vy: 0,
+        age: 0,
+        fuse: weapon.fuse,
+        trailTimer: 0,
+      });
+    } else {
+      const muzzleX = worm.x + Math.cos(angle) * 18;
+      const muzzleY = worm.y - 14 + Math.sin(angle) * 18;
+      this.projectiles.push({
+        id: (this.projectileId += 1),
+        weapon: this.weapon,
+        teamId: team.id,
+        x: muzzleX,
+        y: muzzleY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        age: 0,
+        fuse: weapon.fuse,
+        trailTimer: 0,
+      });
+      this.events.push({ type: 'fire', x: muzzleX, y: muzzleY, angle, weapon: this.weapon });
+      if (this.weapon === 'shotgun') {
+        this.events.push({ type: 'shotgun', x: muzzleX, y: muzzleY, angle });
+      }
+    }
+  }
+
+  endTurn(): void {
+    if (this.phase === 'gameover' || this.phase === 'settle') return;
+    this.finishTurn();
+  }
+
+  surrender(): void {
+    if (this.phase === 'gameover') return;
+    this.finish(this.otherTeam(this.activeTeam), 'surrender');
+  }
+
+  private finishTurn(): void {
+    if (this.phase === 'gameover') return;
+    this.moveDir = 0;
+    this.charging = false;
+    this.aiThinking = false;
+    this.projectiles = [];
+    this.activeTeam = this.otherTeam(this.activeTeam);
+    this.turn += 1;
+    this.beginTurn();
+  }
+
+  private finish(winner: number | null, reason: EndReason): void {
+    if (this.phase === 'gameover') return;
+    this.phase = 'gameover';
+    this.winnerTeam = winner;
+    this.endReason = reason;
+    this.charging = false;
+    this.moveDir = 0;
+    this.events.push({ type: 'gameover', winnerTeamId: winner });
+  }
+
+  private hurt(worm: Worm, amount: number, sourceX: number, sourceY: number, sourceTeam: number | null): void {
+    if (!worm.alive || amount <= 0) return;
+    worm.hp = Math.max(0, worm.hp - amount);
+    this.events.push({ type: 'hurt', x: worm.x, y: worm.y - 26, amount: Math.round(amount) });
+    const dx = worm.x - sourceX;
+    worm.x = worldClamp(worm.x + Math.sign(dx) * Math.min(14, amount * 0.18), 12, 1268);
+    worm.vy = Math.min(worm.vy, -Math.min(260, amount * 2.2));
+    worm.onGround = false;
+    worm.airborne = true;
+    worm.fallDistance = 0;
+    if (worm.hp <= 0) {
+      worm.alive = false;
+      this.events.push({ type: 'death', x: worm.x, y: worm.y, color: this.teams[worm.teamId].color });
+      if (sourceTeam !== null && sourceTeam !== worm.teamId) this.kills[sourceTeam] += 1;
+      this.checkWipeout();
+    }
+  }
+
+  private checkWipeout(): void {
+    for (const team of this.teams) {
+      if (!team.worms.some((w) => w.alive)) {
+        this.finish(this.otherTeam(team.id), 'wipeout');
+        return;
+      }
+    }
+  }
+
+  private explode(x: number, y: number, weapon: WeaponId, sourceTeam: number | null): void {
+    const def = WEAPONS[weapon];
+    this.terrain.carve(x, y, def.terrainRadius);
+    this.events.push({ type: 'explosion', x, y, radius: def.radius });
+    for (const team of this.teams) {
+      for (const worm of team.worms) {
+        if (!worm.alive) continue;
+        const dx = worm.x - x;
+        const dy = worm.y - 13 - y;
+        const distance = Math.hypot(dx, dy);
+        if (distance > def.radius + WORM.radius) continue;
+        const falloff = Math.max(0.22, 1 - distance / (def.radius + WORM.radius));
+        this.hurt(worm, def.damage * falloff, x, y, sourceTeam);
+      }
+    }
+  }
+
+  private stepWorm(worm: Worm, dt: number): void {
+    if (!worm.alive) return;
+    const isActive = worm.id === this.activeWormId && this.phase === 'aim' && !this.teams[worm.teamId].isAi;
+    const canWalk = isActive && this.moveDir !== 0 && !this.charging && !this.hasFired;
+
+    if (canWalk) {
+      const dir = this.moveDir;
+      const nx = worldClamp(worm.x + dir * WORM.walkSpeed * dt, 12, 1268);
+      const bodyBlocked = this.terrain.isSolid(nx, worm.y - 12);
+      const ahead = this.terrain.groundY(nx, worm.y - 18, 42);
+      const slope = ahead === null ? null : ahead - worm.y;
+      if (!bodyBlocked && (slope === null || slope <= 14)) {
+        worm.x = nx;
+        if (worm.facing !== dir) {
+          worm.facing = dir as 1 | -1;
+          worm.aimAngle = mirrorAngle(worm.aimAngle);
+        }
+        if (ahead !== null) {
+          worm.y = ahead;
+          worm.vy = 0;
+          worm.onGround = true;
+          worm.airborne = false;
+          worm.fallDistance = 0;
+        } else {
+          worm.onGround = false;
+        }
+      }
+    }
+
+    if (!worm.onGround) {
+      worm.vy += GRAVITY * dt;
+      const dy = worm.vy * dt;
+      const steps = Math.max(1, Math.ceil(Math.abs(dy) / 5));
+      for (let i = 0; i < steps; i += 1) {
+        const nextY = worm.y + dy / steps;
+        const hit = this.terrain.isSolid(worm.x, nextY);
+        if (hit) {
+          const landing = this.terrain.groundY(worm.x, nextY - Math.abs(dy / steps) - 6, 18);
+          worm.y = landing ?? Math.floor(nextY / 4) * 4;
+          worm.vy = 0;
+          worm.onGround = true;
+          worm.airborne = false;
+          this.applyFallDamage(worm);
+          break;
+        }
+        const stepDelta = dy / steps;
+        worm.y = nextY;
+        if (stepDelta > 0) worm.fallDistance += stepDelta;
+        if (worm.y > WATER_Y) {
+          worm.y = WATER_Y;
+          worm.hp = 0;
+          worm.alive = false;
+          this.events.push({ type: 'splash', x: worm.x, y: WATER_Y });
+          this.checkWipeout();
+          return;
+        }
+      }
+    } else {
+      const ground = this.terrain.groundY(worm.x, worm.y - 6, 24);
+      if (ground === null) {
+        worm.onGround = false;
+        worm.vy = 0;
+        worm.fallDistance = 0;
+      } else {
+        worm.y = ground;
+      }
+    }
+  }
+
+  private applyFallDamage(worm: Worm): void {
+    const drop = worm.fallDistance;
+    worm.fallDistance = 0;
+    if (drop > WORM.fallSafePx) {
+      const amount = (drop - WORM.fallSafePx) * WORM.fallDamagePerPx;
+      if (amount < 1) return;
+      worm.hp = Math.max(0, worm.hp - amount);
+      this.events.push({ type: 'hurt', x: worm.x, y: worm.y - 26, amount: Math.round(amount) });
+      if (worm.hp <= 0 && worm.alive) {
+        worm.alive = false;
+        this.events.push({ type: 'death', x: worm.x, y: worm.y, color: this.teams[worm.teamId].color });
+        this.checkWipeout();
+      }
+    }
+  }
+
+  private chunksFor(speed: number): number {
+    return Math.max(1, Math.ceil((speed * (1 / 60)) / 5));
+  }
+
+  private stepProjectiles(dt: number): void {
+    const survivors: Projectile[] = [];
+    for (const p of this.projectiles) {
+      const def = WEAPONS[p.weapon];
+      p.age += dt;
+      p.trailTimer += dt;
+
+      if (p.fuse !== null && p.age >= p.fuse) {
+        this.explode(p.x, p.y, p.weapon, p.teamId);
+        continue;
+      }
+
+      p.vy += PROJECTILE_GRAVITY * def.gravityScale * dt;
+      p.vx += this.wind * def.windScale * 0.9 * dt;
+
+      const speed = Math.hypot(p.vx, p.vy);
+      const steps = this.chunksFor(speed);
+      const sdt = dt / steps;
+      let consumed = false;
+
+      for (let i = 0; i < steps; i += 1) {
+        const nx = p.x + p.vx * sdt;
+        const ny = p.y + p.vy * sdt;
+
+        const victim = this.teams
+          .flatMap((team) => team.worms)
+          .find(
+            (w) =>
+              w.alive &&
+              !(w.id === this.activeWormId && p.age < 0.14) &&
+              Math.hypot(w.x - nx, w.y - 13 - ny) < 14 + WORM.radius * 0.4,
+          );
+        if (victim) {
+          if (p.weapon === 'shotgun') {
+            this.hurt(victim, def.damage, p.x, p.y, p.teamId);
+            this.events.push({ type: 'impact', x: nx, y: ny });
+            consumed = true;
+            break;
+          }
+          this.explode(nx, ny, p.weapon, p.teamId);
+          consumed = true;
+          break;
+        }
+
+        if (this.terrain.isSolid(nx, ny)) {
+          if (def.bounces) {
+            const hitX = this.terrain.isSolid(nx, p.y);
+            const hitY = this.terrain.isSolid(p.x, ny);
+            if (hitX) p.vx = -p.vx * 0.45;
+            if (hitY) p.vy = -p.vy * 0.42;
+            if (!hitX && !hitY) {
+              p.vx = -p.vx * 0.45;
+              p.vy = -p.vy * 0.42;
+            }
+            p.x += p.vx * sdt;
+            p.y += p.vy * sdt;
+            if (p.age > 0.1) this.events.push({ type: 'bounce', x: p.x, y: p.y });
+          } else {
+            this.explode(nx, ny, p.weapon, p.teamId);
+            consumed = true;
+            break;
+          }
+        }
+
+        p.x = nx;
+        p.y = ny;
+
+        if (p.x < -60 || p.x > 1340 || p.y > WATER_Y) {
+          this.events.push({ type: 'splash', x: Math.max(0, Math.min(1280, p.x)), y: WATER_Y });
+          consumed = true;
+          break;
+        }
+        if (p.y > 760) {
+          consumed = true;
+          break;
+        }
+        const life = PROJECTILE_LIFE[p.weapon];
+        if (life !== undefined && p.age >= life) {
+          consumed = true;
+          break;
+        }
+      }
+
+      if (!consumed) survivors.push(p);
+    }
+    this.projectiles = survivors;
+  }
+
+  update(dt: number): void {
+    if (this.phase === 'gameover') return;
+    this.elapsed += dt;
+
+    if (this.charging) {
+      this.power = Math.min(1, this.power + dt / CHARGE_SECONDS);
+    }
+
+    const team = this.teams[this.activeTeam];
+    if (this.phase === 'aim' && team.isAi && !this.hasFired) {
+      this.aiTimer -= dt;
+      const worm = this.activeWorm;
+      if (this.aiTimer <= 0 && worm && !this.aiPlanDone) {
+        this.aiPlanDone = true;
+        const targets = this.teams[this.otherTeam(team.id)].worms.filter((w) => w.alive);
+        const target = targets.sort(
+          (a, b) => Math.hypot(a.x - worm.x, a.y - worm.y) - Math.hypot(b.x - worm.x, b.y - worm.y),
+        )[0];
+        if (target) {
+          const plan = planAiShot(
+            this.terrain,
+            worm.x,
+            worm.y,
+            target.x,
+            target.y - 10,
+            this.wind,
+            DIFFICULTY[this.config.difficulty],
+            this.rng,
+          );
+          worm.aimAngle = clampAngle(plan.angle);
+          worm.facing = Math.cos(worm.aimAngle) >= 0 ? 1 : -1;
+          this.power = plan.power;
+          this.aiThinking = false;
+          this.fire();
+        } else {
+          this.aiThinking = false;
+        }
+      }
+    }
+
+    for (const t of this.teams) for (const w of t.worms) this.stepWorm(w, dt);
+
+    if (this.phase === 'projectile') {
+      this.stepProjectiles(dt);
+      if (this.projectiles.length === 0) {
+        this.phase = 'settle';
+        this.settleTimer = 0.85;
+      }
+    } else if (this.phase === 'settle') {
+      this.settleTimer -= dt;
+      if (this.settleTimer <= 0) this.finishTurn();
+    } else if (this.phase === 'aim') {
+      this.timeLeft = Math.max(0, this.timeLeft - dt);
+      if (this.timeLeft <= 0) this.finishTurn();
+    }
+  }
+
+  snapshot(): GameSnapshot {
+    const active = this.activeWorm;
+    const teams = this.teams.map((team) => {
+      const hp = team.worms.reduce((sum, w) => sum + (w.alive ? w.hp : 0), 0);
+      return {
+        id: team.id,
+        name: team.name,
+        accent: team.accent,
+        isAi: team.isAi,
+        hp: Math.round(hp),
+        maxHp: team.worms.length * WORM.maxHp,
+        ammo: { ...team.ammo },
+        worms: team.worms.map((w) => ({
+          id: w.id,
+          name: w.name,
+          hp: Math.round(w.hp),
+          maxHp: w.maxHp,
+          alive: w.alive,
+          active: w.id === this.activeWormId,
+          x: w.x,
+          y: w.y,
+        })),
+      };
+    });
+    return {
+      phase: this.phase,
+      turn: this.turn,
+      timeLeft: this.timeLeft,
+      turnSeconds: this.config.turnSeconds,
+      wind: this.wind,
+      windLabel: '',
+      activeTeam: this.activeTeam,
+      activeWormId: this.activeWormId,
+      activeWormName: active?.name ?? '',
+      aimAngle: active?.aimAngle ?? 0,
+      power: this.power,
+      charging: this.charging,
+      weapon: this.weapon,
+      teams,
+      winnerTeam: this.winnerTeam,
+      aiThinking: this.aiThinking,
+    };
+  }
+
+  scoreFor(teamId: number): number {
+    const team = this.teams[teamId];
+    const survivors = team.worms.reduce((sum, w) => sum + (w.alive ? w.hp : 0), 0);
+    const bonus = this.winnerTeam === teamId ? 150 : 0;
+    const timeBonus = this.winnerTeam === teamId ? Math.max(0, Math.round(420 - this.elapsed)) : 0;
+    return Math.round(this.kills[teamId] * 100 + survivors + bonus + timeBonus);
+  }
+}

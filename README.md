@@ -1,0 +1,115 @@
+# Wormageddon
+
+A turn-based artillery duel in the browser: two teams of three worms, one destructible island, wind that ruins your best shot. A portfolio piece built on a production-grade front-end stack — **React + strict TypeScript + PixiJS + TanStack Query + Axios + MSW + Playwright**.
+
+**Live demo:** deploy to Vercel in one command (see [docs/DEPLOY-VERCEL.md](docs/DEPLOY-VERCEL.md)).
+
+![Arena](docs/media/arena.png)
+
+## Why an artillery game
+
+Artillery is a small ruleset with unusually demanding engineering underneath: destructible pixel terrain, ballistics bent by wind, a turn state machine, and an opponent that has to solve the same equations the player does. Around that loop sits a real product surface: typed configuration, a mocked REST backend with pagination, idempotent match writes, persistent settings and a documented test suite.
+
+The genre also forces the separation this project is built around: the simulation cannot depend on the renderer, the frame rate or React.
+
+## Stack
+
+| Responsibility | Technology |
+| --- | --- |
+| Menus, HUD, dialogs | React 18 |
+| Language | TypeScript, `strict: true` |
+| Arena, worms, effects | PixiJS 8 |
+| Ranking / history state | TanStack Query 5 |
+| HTTP client | Axios |
+| Network mocks | MSW 2 |
+| E2E + visual regression | Playwright |
+| Build | Vite 6 |
+
+No game engine, no physics library, no third-party art. Terrain, worms, explosions and sound are generated at runtime.
+
+## Quick start
+
+```bash
+npm install
+npm run dev            # http://localhost:5173
+npm run typecheck      # strict TS, no emit
+npm run build          # production bundle in dist/
+npm run build:single   # one self-contained HTML file in dist-single/
+npm run test:e2e       # Playwright (uses installed Chrome)
+```
+
+`npm run dev` boots the MSW service worker, so the ranking and history tabs work offline. In the single-file build the same REST surface is served by an in-process Axios adapter, because sandboxed iframes cannot register service workers.
+
+## How to play
+
+| Action | Keyboard | Touch |
+| --- | --- | --- |
+| Walk | `A` / `D` or arrows | ◀ ▶ pads |
+| Aim | `W` / `S` | ▲ ▼ pads or drag |
+| Fire | `Space` (hold to charge) | hold **Fire**, or drag and release |
+| Jump | `J` | Jump |
+| Switch weapon | `1`–`4` | weapon dock |
+| End turn | `E` | End turn |
+| Pause | `P` / `Esc` | Pause |
+
+Three worms per side, 100 HP each. Destroy the other team before the turns run out. Falling into water is fatal; long falls hurt. Self-damage is on, as tradition demands.
+
+Weapons: **Bazooka** (unlimited, 42 dmg), **Grenade** (3 bounces, 3s fuse), **Shotgun** (4 flat shots), **Dynamite** (2, 4.2s fuse, huge crater).
+
+## Architecture at a glance
+
+```
+src/
+  game/        pure simulation + Pixi renderer, no React imports
+    config.ts  every balance number lives here
+    engine.ts  turn state machine, physics, damage, win conditions
+    terrain.ts bitmask collision + destructible canvas
+    ai.ts      ballistic solver used by both the CPU and the aim preview
+    renderer.ts Pixi scene graph, particles, camera shake
+    audio.ts   WebAudio synth (no asset files)
+  ui/          React screens and HUD
+  api/         Axios client, TanStack hooks, mock server + types
+  mocks/       MSW worker and handlers
+  state/       localStorage persistence (settings, identity, last result)
+```
+
+The authoritative state is `GameEngine`. React receives a **throttled snapshot at ~10 Hz**; the renderer reads engine state every frame. UI buttons call engine methods through refs, never the other way around.
+
+Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Balance knobs: [docs/CONFIGURATION.md](docs/CONFIGURATION.md). Trade-offs: [docs/DECISIONS.md](docs/DECISIONS.md).
+
+## Ranking and match history
+
+- `GET /api/leaderboard?configKey=&page=&pageSize=` — best score per player for the active ruleset, deterministic tie-break (score desc, duration asc, date asc).
+- `GET /api/matches?playerId=&page=&pageSize=` — the player's own service record.
+- `POST /api/matches` — idempotent on `clientMatchId`; retries return the existing record instead of duplicating it.
+
+All three are implemented once in `src/api/mockServer.ts` and exposed twice: through MSW at the network layer, and through an Axios adapter when a service worker is unavailable. Both paths share the same fixtures, validation and storage, so the demo and the tests agree.
+
+Options include a **Demo network** switch (normal / slow / empty / error) to exercise loading, empty and failure states without editing code.
+
+## Testing
+
+Playwright drives the real UI against the dev server and asserts authoritative state through a documented instrumentation hook (`window.__WORMAGEDDON__.snapshot()`), so tests do not scrape pixels for logic. Visual baselines cover the menu, a stable arena state and the result screen.
+
+```bash
+npm run test:e2e
+npx playwright show-report
+```
+
+See [tests/README.md](tests/README.md).
+
+## Deploy
+
+Vercel is the primary target; the repo ships a `vercel.json` with the SPA rewrite and service-worker headers.
+
+```bash
+npm i -g vercel
+vercel            # preview deployment
+vercel --prod     # production
+```
+
+Step-by-step, including dashboard settings and troubleshooting: [docs/DEPLOY-VERCEL.md](docs/DEPLOY-VERCEL.md).
+
+## Credits
+
+All artwork is drawn procedurally with PixiJS graphics and canvas gradients; all sound is synthesized at runtime. No Worms Armageddon assets are used — the project is a genre homage, not a reproduction of Team17's art.
