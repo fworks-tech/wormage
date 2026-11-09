@@ -1,5 +1,7 @@
 # Contributing
 
+Automated agents should also read [AGENTS.md](AGENTS.md), which restates these rules in the form they need.
+
 ## Setup
 
 ```bash
@@ -24,7 +26,7 @@ Node 20+ is required.
    - `test/deterministic-replay`
 3. **Commit with Conventional Commits.** The type matches the branch type; the scope is optional and names the area.
 4. **Open one PR per issue.** Link it with `Closes #N`. Keep unrelated changes out.
-5. **Do not merge without review.** A PR needs a green pipeline and an approving review.
+5. **Do not merge without review.** A PR needs an approving review and a green pipeline. Until CI lands (#6), run `npm run typecheck`, `npm run build` and `npm run test:e2e` locally and report the result in the PR.
 
 ### Stacked PRs
 
@@ -64,7 +66,7 @@ endTurn() allowed ending the turn while a projectile was in flight.
 
 ## Decisions
 
-Decisions that are expensive to reverse get an ADR in [docs/adr/](docs/adr/README.md). Code-level trade-offs that describe the current implementation live in [docs/DECISIONS.md](docs/DECISIONS.md).
+Decisions that are expensive to reverse get an ADR in [docs/adr/](docs/adr/README.md). Number it sequentially, add it to the index and use the template in that index. Code-level trade-offs that describe the current implementation live in [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ## Style
 

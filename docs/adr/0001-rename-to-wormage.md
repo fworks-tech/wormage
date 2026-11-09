@@ -24,4 +24,4 @@ The runtime key rename ships without a migration. Pre-launch demo data may reset
 
 - Old GitHub URLs redirect automatically.
 - Existing local settings, match history and last result reset once for anyone who ran the old build.
-- Every new key, test id and doc must use the new name; `grep -ri wormageddon` should stay empty.
+- Every new key, test id and doc must use the new name; `grep -ri wormageddon` should stay empty outside this record.
