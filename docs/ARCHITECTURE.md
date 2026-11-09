@@ -52,7 +52,7 @@ Destruction (`Terrain.carve`) zeroes the mask circle and punches the same circle
 
 - Gravity: worms 780 px/s², projectiles 520 px/s² scaled per weapon.
 - Wind: `-max..max` units per ruleset, applied as horizontal acceleration scaled per weapon (`windScale`); the AI and the aim preview use the same value.
-- Aiming is an absolute world angle stored in `[-π, -0.08]`; facing is derived from `cos(angle)`. Walking flips the angle with `mirrorAngle` so the barrel stays on the leading side.
+- Aiming is an absolute world angle stored in `[AIM.min, AIM.max]` (`-3.04` to `-0.1`); facing is derived from `cos(angle)`. Walking flips the angle with `mirrorAngle` so the barrel stays on the leading side.
 - Damage falls off linearly with distance, floored at 22% of the weapon's base damage inside the blast radius.
 - Every worm in radius takes damage, including the shooter. Knockback is applied as a small horizontal shove plus upward velocity, which can push worms into water or off ledges.
 - Fall damage starts above 150 px and costs 0.16 HP per extra pixel.
@@ -70,7 +70,7 @@ aim ──fire──▶ projectile ──(no projectiles)──▶ settle ──
 
 ## 5. AI
 
-`planAiShot` brute-forces ~84 candidate (angle, power) pairs by running the **real** projectile integrator (`simulateShot`) and scoring the landing distance to the nearest enemy worm. It penalises solutions that land within 70 px of the shooter (suicide), then applies difficulty-scaled jitter to angle and power.
+`planAiShot` brute-forces 66 candidate (angle, power) pairs by running the **real** projectile integrator (`simulateShot`) and scoring the landing distance to the nearest enemy worm. It penalises solutions that land within 70 px of the shooter (suicide), then applies difficulty-scaled jitter to angle and power.
 
 Because the solver and the game share one integrator, the CPU never "cheats" — it just searches better than a human can. The player's aim preview uses the same function for the dotted arc and impact crosshair.
 
