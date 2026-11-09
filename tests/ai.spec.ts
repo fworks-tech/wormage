@@ -47,25 +47,33 @@ const plan = (wormX: number, enemyX: number) => {
   });
 };
 
-test('AI picks a weapon and a firing spot whose real shot lands on the enemy', () => {
-  const turn = plan(200, 900);
-  expect(turn).not.toBeNull();
-  expect(turn!.weapon).not.toBe('dynamite');
-
-  const def = WEAPONS[turn!.weapon];
+const impactOf = (turn: NonNullable<ReturnType<typeof plan>>, targetX: number) => {
+  const def = WEAPONS[turn.weapon];
   const impact = simulateShot(
     terrain(),
-    turn!.fireX + Math.cos(turn!.angle) * 18,
-    500 - 14 + Math.sin(turn!.angle) * 18,
-    turn!.angle,
-    turn!.power,
-    turn!.weapon,
+    turn.fireX + Math.cos(turn.angle) * 18,
+    500 - 14 + Math.sin(turn.angle) * 18,
+    turn.angle,
+    turn.power,
+    turn.weapon,
     0,
     def.fuse,
     def.bounces,
   );
-  expect(impact.valid).toBe(true);
-  expect(Math.hypot(impact.x - 900, impact.y - (500 - 13))).toBeLessThan(70);
+  return impact.valid ? Math.hypot(impact.x - targetX, impact.y - (500 - 13)) : Infinity;
+};
+
+test('AI picks a weapon and a firing spot whose real shot lands on the enemy', () => {
+  const turn = plan(200, 900);
+  expect(turn).not.toBeNull();
+  expect(turn!.weapon).not.toBe('dynamite');
+  expect(impactOf(turn!, 900)).toBeLessThan(70);
+});
+
+test('AI aims at an enemy on its left, not away from it', () => {
+  const turn = plan(900, 200);
+  expect(turn).not.toBeNull();
+  expect(impactOf(turn!, 200)).toBeLessThan(70);
 });
 
 test('AI retreats away from the enemy after firing', () => {

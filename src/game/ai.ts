@@ -134,7 +134,8 @@ export function planAiShot(
 ): ShotPlan {
   const facingLeft = targetX < wormX;
   const base = facingLeft ? -Math.PI : 0;
-  const mirror = facingLeft ? -1 : 1;
+  // Angles grow from -π (left) to -0.08 (right), so left-facing adds and right-facing subtracts.
+  const mirror = facingLeft ? 1 : -1;
   const offsets = [0.22, 0.5, 0.75, 1.0, 1.22, 1.42];
   let best: { score: number; angle: number; power: number } | null = null;
 
@@ -245,7 +246,8 @@ function planProjectile(
   }, { enemy: enemies[0], d: Infinity }).enemy;
   const facingLeft = target.x < pos.x;
   const base = facingLeft ? -Math.PI : 0;
-  const mirror = facingLeft ? -1 : 1;
+  // Angles grow from -π (left) to -0.08 (right), so left-facing adds and right-facing subtracts.
+  const mirror = facingLeft ? 1 : -1;
   const offsets = [0.22, 0.5, 0.75, 1.0, 1.22, 1.42];
   const retreatX = chooseRetreat(terrain, pos, enemies, null, 0, RETREAT_SECONDS) ?? pos.x;
   let best: Candidate | null = null;
