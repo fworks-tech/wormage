@@ -155,6 +155,23 @@ test('dynamite fuses down and explodes before the turn passes', async ({ page })
   expect((await snapshot(page)).teams[0].hp).toBeLessThan(hpBefore);
 });
 
+test('the AI plans, fires and hands the turn back', async ({ page }) => {
+  await startMatch(page);
+  await page.getByTestId('btn-end-turn').click();
+  await page.waitForFunction(
+    () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().turn === 2,
+    undefined,
+    { timeout: 5000 },
+  );
+
+  await page.waitForFunction(
+    () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().turn >= 3,
+    undefined,
+    { timeout: 25000 },
+  );
+  expect((await snapshot(page)).activeTeam).toBe(0);
+});
+
 test('ending the turn switches sides without damage', async ({ page }) => {
   await startMatch(page);
   await page.getByTestId('btn-end-turn').click();

@@ -15,7 +15,8 @@ import {
   worldClamp,
 } from './config';
 import { Terrain, mulberry32 } from './terrain';
-import { clampAngle, mirrorAngle, planAiShot } from './ai';
+import { clampAngle, mirrorAngle, planAiShot, planAiTurn } from './ai';
+import type { AiTurnPlan } from './ai';
 import { configKey } from './types';
 import type {
   EndReason,
@@ -60,7 +61,9 @@ export class GameEngine {
   private projectiles: Projectile[] = [];
   private settleTimer = 0;
   private aiTimer = 0;
-  private aiPlanDone = false;
+  private aiPlan: AiTurnPlan | null = null;
+  private aiStall = 0;
+  private aiLastX = -1;
   private jumpsLeft = WORM.maxJumpsPerTurn;
   private projectileId = 0;
   private readonly rng: () => number;
@@ -154,8 +157,10 @@ export class GameEngine {
     this.jumpsLeft = WORM.maxJumpsPerTurn;
     this.settleTimer = 0;
     this.retreatTimer = 0;
-    this.aiTimer = 1.25;
-    this.aiPlanDone = false;
+    this.aiTimer = 0.9;
+    this.aiPlan = null;
+    this.aiStall = 0;
+    this.aiLastX = -1;
     this.aiThinking = team.isAi;
     const maxWind = WIND_ACCEL[this.config.wind];
     this.wind = first ? 0 : Math.round((this.rng() * 2 - 1) * maxWind);
@@ -532,6 +537,106 @@ export class GameEngine {
     this.projectiles = survivors;
   }
 
+  private nearestEnemy(worm: Worm): Worm | null {
+    const targets = this.teams[this.otherTeam(worm.teamId)].worms.filter((w) => w.alive);
+    return (
+      targets.sort(
+        (a, b) => Math.hypot(a.x - worm.x, a.y - worm.y) - Math.hypot(b.x - worm.x, b.y - worm.y),
+      )[0] ?? null
+    );
+  }
+
+  private aimAt(angle: number, power: number): void {
+    const worm = this.activeWorm;
+    if (!worm) return;
+    worm.aimAngle = clampAngle(angle);
+    worm.facing = Math.cos(worm.aimAngle) >= 0 ? 1 : -1;
+    this.power = power;
+  }
+
+  /**
+   * The AI walks to its firing spot, fires the planned weapon, then keeps
+   * walking to its retreat spot while the post-fire window is open.
+   */
+  private updateAi(dt: number): void {
+    const worm = this.activeWorm;
+    if (!worm) return;
+
+    if (this.retreatActive) {
+      const dx = this.aiPlan ? this.aiPlan.retreatX - worm.x : 0;
+      this.moveDir = Math.abs(dx) <= 6 ? 0 : dx > 0 ? 1 : -1;
+      return;
+    }
+
+    if (this.phase !== 'aim' || this.hasFired) return;
+
+    if (!this.aiPlan) {
+      this.aiTimer -= dt;
+      if (this.aiTimer > 0) return;
+
+      const worms = this.teams.flatMap((team) =>
+        team.worms.filter((w) => w.alive).map((w) => ({ id: w.id, teamId: w.teamId, x: w.x, y: w.y })),
+      );
+      this.aiPlan = planAiTurn({
+        terrain: this.terrain,
+        worm: { id: worm.id, teamId: worm.teamId, x: worm.x, y: worm.y },
+        worms,
+        ammo: { ...this.teams[this.activeTeam].ammo },
+        wind: this.wind,
+        timeLeft: this.timeLeft,
+        difficulty: DIFFICULTY[this.config.difficulty],
+        rng: this.rng,
+      });
+      this.aiLastX = worm.x;
+      this.aiStall = 0;
+
+      if (!this.aiPlan) {
+        this.aiThinking = false;
+        this.finishTurn();
+        return;
+      }
+    }
+
+    const plan = this.aiPlan;
+    const distance = plan.fireX - worm.x;
+    if (Math.abs(distance) > 6) {
+      this.moveDir = distance > 0 ? 1 : -1;
+      if (Math.abs(worm.x - this.aiLastX) < 0.5) this.aiStall += dt;
+      else {
+        this.aiStall = 0;
+        this.aiLastX = worm.x;
+      }
+      // Blocked or out of turn time: take the best bazooka shot from here.
+      if (this.aiStall < 1.5 && this.timeLeft > 0.5) return;
+
+      this.moveDir = 0;
+      const target = this.nearestEnemy(worm);
+      if (target) {
+        const shot = planAiShot(
+          this.terrain,
+          worm.x,
+          worm.y,
+          target.x,
+          target.y - 10,
+          this.wind,
+          DIFFICULTY[this.config.difficulty],
+          this.rng,
+        );
+        this.weapon = 'bazooka';
+        this.aimAt(shot.angle, shot.power);
+      }
+      this.aiThinking = false;
+      this.fire();
+      return;
+    }
+
+    this.moveDir = 0;
+    this.weapon = plan.weapon;
+    this.aimAt(plan.angle, plan.power);
+    this.aiThinking = false;
+    this.fire();
+  }
+
   update(dt: number): void {
     if (this.phase === 'gameover') return;
     this.elapsed += dt;
@@ -545,37 +650,7 @@ export class GameEngine {
       if (this.retreatTimer === 0) this.moveDir = 0;
     }
 
-    const team = this.teams[this.activeTeam];
-    if (this.phase === 'aim' && team.isAi && !this.hasFired) {
-      this.aiTimer -= dt;
-      const worm = this.activeWorm;
-      if (this.aiTimer <= 0 && worm && !this.aiPlanDone) {
-        this.aiPlanDone = true;
-        const targets = this.teams[this.otherTeam(team.id)].worms.filter((w) => w.alive);
-        const target = targets.sort(
-          (a, b) => Math.hypot(a.x - worm.x, a.y - worm.y) - Math.hypot(b.x - worm.x, b.y - worm.y),
-        )[0];
-        if (target) {
-          const plan = planAiShot(
-            this.terrain,
-            worm.x,
-            worm.y,
-            target.x,
-            target.y - 10,
-            this.wind,
-            DIFFICULTY[this.config.difficulty],
-            this.rng,
-          );
-          worm.aimAngle = clampAngle(plan.angle);
-          worm.facing = Math.cos(worm.aimAngle) >= 0 ? 1 : -1;
-          this.power = plan.power;
-          this.aiThinking = false;
-          this.fire();
-        } else {
-          this.aiThinking = false;
-        }
-      }
-    }
+    if (this.teams[this.activeTeam].isAi) this.updateAi(dt);
 
     for (const t of this.teams) for (const w of t.worms) this.stepWorm(w, dt);
 
