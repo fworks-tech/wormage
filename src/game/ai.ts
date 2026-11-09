@@ -1,4 +1,4 @@
-import { GRAVITY, PROJECTILE_GRAVITY, WATER_Y, WIND_ACCEL, WORM } from './config';
+import { BOUNCE, GRAVITY, PROJECTILE_GRAVITY, WATER_Y, WEAPONS, WIND_ACCEL, WIND_FACTOR, WORM } from './config';
 import type { WeaponId } from './types';
 import { Terrain } from './terrain';
 
@@ -28,16 +28,8 @@ export function simulateShot(
   fuse: number | null = null,
   bounces = false,
 ): SimResult {
-  const speeds: Record<WeaponId, [number, number]> = {
-    bazooka: [260, 830],
-    grenade: [240, 760],
-    shotgun: [1500, 1500],
-    dynamite: [0, 0],
-  };
-  const [min, max] = speeds[weapon];
-  const speed = min + (max - min) * power;
-  const gravityScale = weapon === 'shotgun' ? 0.08 : 1;
-  const windScale = weapon === 'shotgun' ? 0 : weapon === 'grenade' ? 0.8 : 1;
+  const def = WEAPONS[weapon];
+  const speed = def.speedMin + (def.speedMax - def.speedMin) * power;
 
   let x = startX;
   let y = startY;
@@ -47,25 +39,25 @@ export function simulateShot(
 
   for (let t = 0; t < 5; t += dt) {
     if (fuse !== null && t >= fuse) return { x, y, valid: true };
-    vy += PROJECTILE_GRAVITY * gravityScale * dt;
-    vx += wind * windScale * 0.9 * dt;
+    vy += PROJECTILE_GRAVITY * def.gravityScale * dt;
+    vx += wind * def.windScale * WIND_FACTOR * dt;
     x += vx * dt;
     y += vy * dt;
     if (x < 0 || x > 1280 || y > WATER_Y) return { x, y, valid: false };
     if (terrain.isSolid(x, y)) {
       if (!bounces) return { x, y, valid: y < WATER_Y - 12 };
       if (terrain.isSolid(x - vx * dt, y)) {
-        vx = -vx * 0.45;
+        vx = -vx * BOUNCE.x;
       } else if (terrain.isSolid(x, y - vy * dt)) {
-        vy = -vy * 0.45;
+        vy = -vy * BOUNCE.y;
       } else {
-        vx = -vx * 0.45;
-        vy = -vy * 0.45;
+        vx = -vx * BOUNCE.x;
+        vy = -vy * BOUNCE.y;
       }
       x -= vx * dt;
       y -= vy * dt;
     }
-    if (weapon === 'shotgun' && t > 0.32) return { x, y, valid: true };
+    if (def.life !== null && t >= def.life) return { x, y, valid: true };
   }
   return { x, y, valid: false };
 }

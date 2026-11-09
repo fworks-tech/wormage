@@ -1,5 +1,6 @@
 import {
   AIM,
+  BOUNCE,
   CHARGE_SECONDS,
   DIFFICULTY,
   GRAVITY,
@@ -8,6 +9,7 @@ import {
   WATER_Y,
   WEAPONS,
   WIND_ACCEL,
+  WIND_FACTOR,
   WORM,
   worldClamp,
 } from './config';
@@ -30,8 +32,6 @@ const WORM_NAMES = [
   ['Sarge', 'Biscuit', 'Mags'],
   ['Crank', 'Nyx', 'Dust'],
 ];
-
-const PROJECTILE_LIFE: Partial<Record<WeaponId, number>> = { shotgun: 0.34 };
 
 export class GameEngine {
   readonly config: MatchConfig;
@@ -446,7 +446,7 @@ export class GameEngine {
       }
 
       p.vy += PROJECTILE_GRAVITY * def.gravityScale * dt;
-      p.vx += this.wind * def.windScale * 0.9 * dt;
+      p.vx += this.wind * def.windScale * WIND_FACTOR * dt;
 
       const speed = Math.hypot(p.vx, p.vy);
       const steps = this.chunksFor(speed);
@@ -481,11 +481,11 @@ export class GameEngine {
           if (def.bounces) {
             const hitX = this.terrain.isSolid(nx, p.y);
             const hitY = this.terrain.isSolid(p.x, ny);
-            if (hitX) p.vx = -p.vx * 0.45;
-            if (hitY) p.vy = -p.vy * 0.42;
+            if (hitX) p.vx = -p.vx * BOUNCE.x;
+            if (hitY) p.vy = -p.vy * BOUNCE.y;
             if (!hitX && !hitY) {
-              p.vx = -p.vx * 0.45;
-              p.vy = -p.vy * 0.42;
+              p.vx = -p.vx * BOUNCE.x;
+              p.vy = -p.vy * BOUNCE.y;
             }
             p.x += p.vx * sdt;
             p.y += p.vy * sdt;
@@ -509,8 +509,8 @@ export class GameEngine {
           consumed = true;
           break;
         }
-        const life = PROJECTILE_LIFE[p.weapon];
-        if (life !== undefined && p.age >= life) {
+        const life = def.life;
+        if (life !== null && p.age >= life) {
           consumed = true;
           break;
         }

@@ -7,6 +7,8 @@ export const WATER_Y = 668;
 
 export const GRAVITY = 780;
 export const PROJECTILE_GRAVITY = 520;
+export const WIND_FACTOR = 0.9;
+export const BOUNCE = { x: 0.45, y: 0.42 } as const;
 export const WIND_ACCEL: Record<WindSetting, number> = {
   off: 0,
   light: 46,
@@ -46,6 +48,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     windScale: 1,
     fuse: null,
     bounces: false,
+    life: null,
     color: 0xffd166,
     blurb: 'Reliable arc, unlimited rockets. Mind the wind.',
   },
@@ -63,6 +66,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     windScale: 0.8,
     fuse: 3,
     bounces: true,
+    life: null,
     color: 0x9ee37d,
     blurb: 'Bounces off dirt, detonates after three seconds.',
   },
@@ -80,6 +84,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     windScale: 0,
     fuse: null,
     bounces: false,
+    life: 0.34,
     color: 0xf2b8a2,
     blurb: 'Flat and fast. No arc, no excuses.',
   },
@@ -97,6 +102,7 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     windScale: 0,
     fuse: 4.2,
     bounces: false,
+    life: null,
     color: 0xff6b5b,
     blurb: 'Drops at your feet. Run. Four second fuse.',
   },
