@@ -656,7 +656,8 @@ export class GameEngine {
 
     if (this.phase === 'projectile') {
       this.stepProjectiles(dt);
-      if (this.projectiles.length === 0) {
+      // stepProjectiles can finish the match; do not overwrite gameover with settle.
+      if (this.projectiles.length === 0 && this.phase === 'projectile') {
         this.phase = 'settle';
         this.settleTimer = 0.85;
       }
