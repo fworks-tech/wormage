@@ -105,3 +105,7 @@ The live build is [wormage.flabs.tech](https://wormage.flabs.tech). Vercel auto-
 ## Credits
 
 All artwork is drawn procedurally with PixiJS graphics and canvas gradients; all sound is synthesized at runtime. No Worms Armageddon assets are used — the project is a genre homage, not a reproduction of Team17's art.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

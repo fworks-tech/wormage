@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Turn-based artillery warfare for the browser. React + PixiJS portfolio piece.",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
