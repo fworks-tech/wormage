@@ -75,7 +75,7 @@ src/
 
 The authoritative state is `GameEngine`. React receives a **throttled snapshot at ~10 Hz**; the renderer reads engine state every frame. UI buttons call engine methods through refs, never the other way around.
 
-Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Balance knobs: [docs/CONFIGURATION.md](docs/CONFIGURATION.md). Trade-offs: [docs/DECISIONS.md](docs/DECISIONS.md).
+Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Balance knobs: [docs/CONFIGURATION.md](docs/CONFIGURATION.md). Code-level trade-offs: [docs/DECISIONS.md](docs/DECISIONS.md). Roadmap, architecture decisions and contribution rules: [docs/ROADMAP.md](docs/ROADMAP.md), [docs/adr/](docs/adr/README.md), [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Ranking and match history
 
