@@ -37,6 +37,7 @@ export interface WeaponDef {
   windScale: number;
   fuse: number | null;
   bounces: boolean;
+  life: number | null;
   color: number;
   blurb: string;
 }
