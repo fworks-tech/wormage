@@ -15,11 +15,11 @@ const startMatch = async (page: import('@playwright/test').Page) => {
   await page.goto('/?seed=4242');
   await page.getByTestId('btn-play').click();
   await expect(page.getByTestId('arena').locator('canvas')).toBeVisible();
-  await page.waitForFunction(() => Boolean((window as never as { __WORMAGEDDON__?: unknown }).__WORMAGEDDON__));
+  await page.waitForFunction(() => Boolean((window as never as { __WORMAGE__?: unknown }).__WORMAGE__));
 };
 
 const snapshot = (page: import('@playwright/test').Page) =>
-  page.evaluate(() => (window as never as { __WORMAGEDDON__: { snapshot: () => Snapshot } }).__WORMAGEDDON__.snapshot());
+  page.evaluate(() => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot());
 
 test('firing runs a projectile and hands the turn to the AI', async ({ page }) => {
   await startMatch(page);
@@ -32,7 +32,7 @@ test('firing runs a projectile and hands the turn to the AI', async ({ page }) =
   await page.waitForTimeout(150);
   expect(['projectile', 'settle']).toContain((await snapshot(page)).phase);
 
-  await page.waitForFunction(() => (window as never as { __WORMAGEDDON__: { snapshot: () => Snapshot } }).__WORMAGEDDON__.snapshot().turn >= 2, undefined, { timeout: 15000 });
+  await page.waitForFunction(() => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().turn >= 2, undefined, { timeout: 15000 });
   const after = await snapshot(page);
   expect(after.activeTeam).toBe(1);
 });
@@ -81,7 +81,7 @@ test('pause freezes the turn timer until resumed', async ({ page }) => {
 test('ending the turn switches sides without damage', async ({ page }) => {
   await startMatch(page);
   await page.getByTestId('btn-end-turn').click();
-  await page.waitForFunction(() => (window as never as { __WORMAGEDDON__: { snapshot: () => Snapshot } }).__WORMAGEDDON__.snapshot().turn === 2, undefined, { timeout: 5000 });
+  await page.waitForFunction(() => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().turn === 2, undefined, { timeout: 5000 });
   const after = await snapshot(page);
   expect(after.activeTeam).toBe(1);
   expect(after.teams[0].hp).toBe(300);

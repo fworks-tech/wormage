@@ -89,7 +89,7 @@ Options include a **Demo network** switch (normal / slow / empty / error) to exe
 
 ## Testing
 
-Playwright drives the real UI against the dev server and asserts authoritative state through a documented instrumentation hook (`window.__WORMAGEDDON__.snapshot()`), so tests do not scrape pixels for logic. Visual baselines cover the menu, a stable arena state and the result screen.
+Playwright drives the real UI against the dev server and asserts authoritative state through a documented instrumentation hook (`window.__WORMAGE__.snapshot()`), so tests do not scrape pixels for logic. Visual baselines cover the menu, a stable arena state and the result screen.
 
 ```bash
 npm run test:e2e

@@ -78,7 +78,7 @@ Damage falloff: `max(0.22, 1 - distance / (radius + 11))`. A worm on the edge st
 | `empty` | valid empty pages (shows empty states) |
 | `error` | HTTP 503 on reads and writes (shows error states and retry) |
 
-Reset with **Reset demo data** in Options, or `localStorage.removeItem('wormageddon.mockdb.v1')`.
+Reset with **Reset demo data** in Options, or `localStorage.removeItem('wormage.mockdb.v1')`.
 
 ## Common tweaks
 

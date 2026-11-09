@@ -70,7 +70,7 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
     // E2E instrumentation: lets Playwright observe the authoritative simulation
     // state instead of scraping pixels. Read-only by convention.
     if (typeof window !== 'undefined') {
-      (window as unknown as { __WORMAGEDDON__?: unknown }).__WORMAGEDDON__ = {
+      (window as unknown as { __WORMAGE__?: unknown }).__WORMAGE__ = {
         engine,
         snapshot: () => engine.snapshot(),
         version: '1.0.0',
@@ -207,7 +207,7 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
       }
       rendererRef.current = null;
       engineRef.current = null;
-      delete (window as unknown as { __WORMAGEDDON__?: unknown }).__WORMAGEDDON__;
+      delete (window as unknown as { __WORMAGE__?: unknown }).__WORMAGE__;
       soundRef.current = null;
     };
     // The match runs from a settings snapshot taken at mount.

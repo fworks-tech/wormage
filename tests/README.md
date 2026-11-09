@@ -16,8 +16,8 @@ The config uses `channel: 'chrome'` so no browser download is required, and star
 Gameplay assertions read the authoritative simulation through:
 
 ```ts
-window.__WORMAGEDDON__.snapshot()   // GameSnapshot
-window.__WORMAGEDDON__.engine       // imperative engine (surrender, endTurn…)
+window.__WORMAGE__.snapshot()   // GameSnapshot
+window.__WORMAGE__.engine       // imperative engine (surrender, endTurn…)
 ```
 
 This hook exists only to make E2E deterministic; it is not used by the UI. Tests still drive real buttons, keys and pointer gestures for anything the user can do.
