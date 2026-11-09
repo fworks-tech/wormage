@@ -100,7 +100,5 @@ Playwright uses the installed Chrome (`channel: 'chrome'`); do not download brow
 
 ## Current gaps (as of this file)
 
-- CI exists only on the unmerged `ci/github-actions` branch (#6, PR #28); PRs currently report no checks.
-- MIT license is on `chore/license` (#7, PR #29), not on `main` yet.
 - Fixed timestep, Vitest and deterministic replay are M1 work (#10–#14).
 - Ranking and history still run on MSW fixtures; AWS arrives in M3 (#16).

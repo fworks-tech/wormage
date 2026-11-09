@@ -26,7 +26,7 @@ Node 20+ is required.
    - `test/deterministic-replay`
 3. **Commit with Conventional Commits.** The type matches the branch type; the scope is optional and names the area.
 4. **Open one PR per issue.** Link it with `Closes #N`. Keep unrelated changes out.
-5. **Do not merge without review.** A PR needs an approving review and a green pipeline. Until CI lands (#6), run `npm run typecheck`, `npm run build` and `npm run test:e2e` locally and report the result in the PR.
+5. **Do not merge without review.** A PR needs an approving review and a green CI run — typecheck, build and Playwright on desktop and mobile.
 
 ### Stacked PRs
 
