@@ -97,7 +97,7 @@ Options include a **Demo network** switch (normal / slow / empty / error) to exe
 
 ## Testing
 
-Playwright drives the real UI against the dev server and asserts authoritative state through a documented instrumentation hook (`window.__WORMAGE__.snapshot()`), so tests do not scrape pixels for logic. Eleven specs run on desktop and mobile viewports. Visual baselines are not written yet; they are planned for M1.
+Playwright drives the real UI against the dev server and asserts authoritative state through a documented instrumentation hook (`window.__WORMAGE__.snapshot()`), so tests do not scrape pixels for logic. The suite runs on desktop and mobile viewports. Visual baselines are not written yet; they are planned for M1.
 
 ```bash
 npm run test:e2e

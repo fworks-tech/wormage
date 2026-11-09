@@ -33,7 +33,7 @@ The engine pushes a `GameSnapshot` to React at most every 100 ms. The Pixi rende
 
 ## 5. Absolute aim angles
 
-Aim is stored as a world angle in `[-π, -0.08]` with `cos(angle)` deciding facing, instead of "angle relative to facing".
+Aim is stored as a world angle in `[-3.04, -0.1]` with `cos(angle)` deciding facing, instead of "angle relative to facing".
 
 **Why:** the same number feeds `Math.cos/sin` for the muzzle, the preview and the AI. Flipping direction is `mirrorAngle` (`-π - angle`), which keeps the barrel pointing where it pointed.
 **Cost:** special cases for clamping and mirroring live in one place (`clampAngle`, `mirrorAngle`) and must be used everywhere.

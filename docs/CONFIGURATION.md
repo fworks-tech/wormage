@@ -51,7 +51,7 @@ Damage falloff: `max(0.22, 1 - distance / (radius + 11))`. A worm on the edge st
 
 ## Difficulty
 
-`DIFFICULTY[difficulty].angleError` and `.powerError` are the half-width of random jitter applied to the AI's best solved shot. Rookie ≈ 4.3°/5% power, Veteran ≈ 2°/2.6%, Elite ≈ 0.7°/0.9%. The solver itself is identical.
+`DIFFICULTY[difficulty].angleError` and `.powerError` are the half-width of random jitter applied to the AI's best solved shot. Rookie ≈ 4.3°/9% power, Veteran ≈ 2°/4.5%, Elite ≈ 0.7°/1.5%. The solver itself is identical.
 
 ## Match rules
 

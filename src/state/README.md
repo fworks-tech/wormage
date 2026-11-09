@@ -1,6 +1,6 @@
 # src/state — persistence
 
-`storage.ts` is the only module that touches `localStorage`. Every read is validated, every write is wrapped so private browsing or opaque-origin iframes degrade to in-memory behaviour instead of crashing.
+`storage.ts` owns the app's persisted state. `src/api/mockServer.ts` also keeps its fixture database and demo scenario in `localStorage`. Every read is validated, every write is wrapped so private browsing or opaque-origin iframes degrade to in-memory behaviour instead of crashing.
 
 | Key | Contents | Consumer |
 | --- | --- | --- |
