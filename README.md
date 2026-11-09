@@ -2,7 +2,7 @@
 
 A turn-based artillery duel in the browser: two teams of three worms, one destructible island, wind that ruins your best shot. A portfolio piece built on a production-grade front-end stack — **React + strict TypeScript + PixiJS + TanStack Query + Axios + MSW + Playwright**.
 
-**Live demo:** deploy to Vercel in one command (see [docs/DEPLOY-VERCEL.md](docs/DEPLOY-VERCEL.md)).
+**Live demo:** [wormage.flabs.tech](https://wormage.flabs.tech).
 
 ![Arena](docs/media/arena.png)
 
@@ -100,15 +100,7 @@ See [tests/README.md](tests/README.md).
 
 ## Deploy
 
-Vercel is the primary target; the repo ships a `vercel.json` with the SPA rewrite and service-worker headers.
-
-```bash
-npm i -g vercel
-vercel            # preview deployment
-vercel --prod     # production
-```
-
-Step-by-step, including dashboard settings and troubleshooting: [docs/DEPLOY-VERCEL.md](docs/DEPLOY-VERCEL.md).
+The live build is [wormage.flabs.tech](https://wormage.flabs.tech). Vercel auto-deploys `main`; `vercel.json` keeps the SPA rewrite and serves `/mockServiceWorker.js` from the root with the headers MSW needs. Merging to `main` is the deploy.
 
 ## Credits
 
