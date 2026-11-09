@@ -372,6 +372,8 @@ function walkablePath(terrain: AiTerrain, from: { x: number; y: number }, toX: n
   let y = from.y;
   for (let x = from.x; dir !== 0 && (dir > 0 ? x < toX : x > toX); ) {
     x = dir > 0 ? Math.min(x + 4, toX) : Math.max(x - 4, toX);
+    // shortcut: a ledge counts as blocked rather than measuring the fall, so
+    // the AI may skip a safe drop-down retreat; revisit with a real walk sim.
     const ground = terrain.groundY(x, y - 18, 260);
     if (ground === null || ground > WATER_Y - 30) return false;
     if (terrain.isSolid(x, ground - 12)) return false;
