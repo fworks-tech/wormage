@@ -14,7 +14,7 @@ The repository is a standard Vite SPA with one extra requirement: the MSW servic
 
 ```bash
 npm i -g vercel
-cd wormageddon
+cd wormage
 vercel login
 vercel          # preview URL, answers a few project questions
 vercel --prod   # production URL
@@ -26,13 +26,13 @@ Vercel auto-detects Vite. When asked, the answers are:
 | --- | --- |
 | Set up and deploy? | Yes |
 | Link to existing project? | No (first time) |
-| Project name | `wormageddon` (or anything) |
+| Project name | `wormage` (or anything) |
 | Directory | `./` |
 | Override build settings? | No |
 
 ## 3. Deploy from the dashboard
 
-1. **Add New → Project → Import Git Repository**, pick `fworks-tech/wormageddon` (the actual repo name).
+1. **Add New → Project → Import Git Repository**, pick `fworks-tech/wormage` (the actual repo name).
 2. Framework preset: **Vite**.
 3. Build command: `npm run build`.
 4. Output directory: `dist`.

@@ -16,7 +16,7 @@ test.beforeEach(async ({ page }) => {
 
 test('menu renders the briefing and both boards', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('h1.wordmark')).toContainText('WORM');
+  await expect(page.locator('h1.wordmark')).toContainText('WORMAGE');
   await expect(page.getByTestId('btn-play')).toBeVisible();
 
   await page.getByTestId('tab-ranking').click();
