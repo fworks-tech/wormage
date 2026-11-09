@@ -298,7 +298,7 @@ export function Hud({
             type="button"
             className="ghost-btn end-turn"
             onClick={onEndTurn}
-            disabled={snapshot.phase === 'gameover'}
+            disabled={!playerTurn || snapshot.charging}
             data-testid="btn-end-turn"
           >
             End turn

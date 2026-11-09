@@ -37,6 +37,28 @@ test('firing runs a projectile and hands the turn to the AI', async ({ page }) =
   expect(after.activeTeam).toBe(1);
 });
 
+test('ending the turn during a shot does not cancel the projectile', async ({ page }) => {
+  await startMatch(page);
+  await page.getByTestId('btn-fire').click();
+  await page.waitForFunction(() => {
+    const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
+    return state.phase === 'projectile';
+  });
+
+  await expect(page.getByTestId('btn-end-turn')).toBeDisabled();
+  await page.keyboard.press('e');
+
+  const during = await snapshot(page);
+  expect(during.turn).toBe(1);
+  expect(['projectile', 'settle']).toContain(during.phase);
+
+  await page.waitForFunction(
+    () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().turn >= 2,
+    undefined,
+    { timeout: 15000 },
+  );
+});
+
 test('walking changes the worm x position and respects the arena edge', async ({ page }) => {
   await startMatch(page);
   const before = await snapshot(page);
