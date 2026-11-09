@@ -654,11 +654,14 @@ export class ArenaRenderer {
       .lineTo(point.x, point.y + 14)
       .stroke({ width: 2, color: 0xffe08a, alpha: 0.7 });
 
-    // power arc under the worm
+    // power arc under the worm; moveTo first so it never joins the reticle path
     if (snapshot.power > 0.01) {
       const arc = Math.PI * 0.9;
+      const start = Math.PI * 0.55;
+      const radius = 22;
       this.aim
-        .arc(activeWorm.x, activeWorm.y - 2, 22, Math.PI * 0.55, Math.PI * 0.55 + arc * snapshot.power)
+        .moveTo(activeWorm.x + Math.cos(start) * radius, activeWorm.y - 2 + Math.sin(start) * radius)
+        .arc(activeWorm.x, activeWorm.y - 2, radius, start, start + arc * snapshot.power)
         .stroke({ width: 3, color: snapshot.power > 0.85 ? 0xff6b5b : 0x9ee37d, alpha: 0.9 });
     }
   }
