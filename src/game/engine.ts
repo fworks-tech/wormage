@@ -5,6 +5,7 @@ import {
   DIFFICULTY,
   GRAVITY,
   PROJECTILE_GRAVITY,
+  RETREAT_SECONDS,
   TEAMS,
   WATER_Y,
   WEAPONS,
@@ -54,6 +55,7 @@ export class GameEngine {
   kills = [0, 0];
   elapsed = 0;
   aiThinking = false;
+  retreatTimer = 0;
 
   private projectiles: Projectile[] = [];
   private settleTimer = 0;
@@ -128,6 +130,11 @@ export class GameEngine {
     return this.projectiles;
   }
 
+  /** True while the shooter may still walk away after firing. */
+  get retreatActive(): boolean {
+    return this.retreatTimer > 0 && (this.phase === 'projectile' || this.phase === 'settle');
+  }
+
   private beginTurn(first = false): void {
     const team = this.teams[this.activeTeam];
     const next = this.nextAliveWorm(team);
@@ -146,6 +153,7 @@ export class GameEngine {
     this.hasFired = false;
     this.jumpsLeft = WORM.maxJumpsPerTurn;
     this.settleTimer = 0;
+    this.retreatTimer = 0;
     this.aiTimer = 1.25;
     this.aiPlanDone = false;
     this.aiThinking = team.isAi;
@@ -233,6 +241,7 @@ export class GameEngine {
     this.hasFired = true;
     this.charging = false;
     this.phase = 'projectile';
+    this.retreatTimer = RETREAT_SECONDS;
 
     if (this.weapon === 'dynamite') {
       this.projectiles.push({
@@ -284,6 +293,7 @@ export class GameEngine {
     this.moveDir = 0;
     this.charging = false;
     this.aiThinking = false;
+    this.retreatTimer = 0;
     this.projectiles = [];
     this.activeTeam = this.otherTeam(this.activeTeam);
     this.turn += 1;
@@ -346,8 +356,9 @@ export class GameEngine {
 
   private stepWorm(worm: Worm, dt: number): void {
     if (!worm.alive) return;
-    const isActive = worm.id === this.activeWormId && this.phase === 'aim' && !this.teams[worm.teamId].isAi;
-    const canWalk = isActive && this.moveDir !== 0 && !this.charging && !this.hasFired;
+    const isActive = worm.id === this.activeWormId;
+    const canWalk =
+      isActive && (this.phase === 'aim' || this.retreatActive) && this.moveDir !== 0 && !this.charging;
 
     if (canWalk) {
       const dir = this.moveDir;
@@ -529,6 +540,11 @@ export class GameEngine {
       this.power = Math.min(1, this.power + dt / CHARGE_SECONDS);
     }
 
+    if (this.retreatActive) {
+      this.retreatTimer = Math.max(0, this.retreatTimer - dt);
+      if (this.retreatTimer === 0) this.moveDir = 0;
+    }
+
     const team = this.teams[this.activeTeam];
     if (this.phase === 'aim' && team.isAi && !this.hasFired) {
       this.aiTimer -= dt;
@@ -571,7 +587,7 @@ export class GameEngine {
       }
     } else if (this.phase === 'settle') {
       this.settleTimer -= dt;
-      if (this.settleTimer <= 0) this.finishTurn();
+      if (this.settleTimer <= 0 && this.retreatTimer <= 0) this.finishTurn();
     } else if (this.phase === 'aim') {
       this.timeLeft = Math.max(0, this.timeLeft - dt);
       if (this.timeLeft <= 0) this.finishTurn();
@@ -619,6 +635,12 @@ export class GameEngine {
       teams,
       winnerTeam: this.winnerTeam,
       aiThinking: this.aiThinking,
+      retreatLeft: this.retreatActive ? this.retreatTimer : 0,
+      fuseLeft: this.projectiles.reduce<number | null>((soonest, p) => {
+        if (p.fuse === null) return soonest;
+        const left = Math.max(0, p.fuse - p.age);
+        return soonest === null ? left : Math.min(soonest, left);
+      }, null),
     };
   }
 

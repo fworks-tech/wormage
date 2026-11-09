@@ -44,12 +44,18 @@ export function Hud({
   const fireHeld = useRef(false);
 
   const playerTurn = snapshot.activeTeam === 0 && snapshot.phase === 'aim' && !paused;
+  const canSteer = snapshot.activeTeam === 0 && !paused && (snapshot.phase === 'aim' || snapshot.retreatLeft > 0);
   const myTeam = snapshot.teams[0];
   const enemy = snapshot.teams[1];
   const weapon = WEAPONS[snapshot.weapon];
   const ammo = myTeam?.ammo[snapshot.weapon] ?? 0;
   const timeRatio = snapshot.timeLeft / Math.max(1, snapshot.turnSeconds);
   const activeWorm = snapshot.teams[snapshot.activeTeam]?.worms.find((w) => w.active);
+  const fuseLeft = snapshot.fuseLeft === null ? null : Math.max(0, Math.ceil(snapshot.fuseLeft));
+  const inFlight = snapshot.phase !== 'aim';
+  const countdown = inFlight ? fuseLeft ?? Math.ceil(snapshot.retreatLeft) : Math.ceil(snapshot.timeLeft);
+  const countdownRatio = inFlight ? Math.min(1, (fuseLeft ?? snapshot.retreatLeft) / 3) : timeRatio;
+  const phaseLabel = inFlight ? (fuseLeft !== null ? 'Fuse' : 'Retreat') : activeWorm?.name ?? '';
 
   useHoldRepeat(() => onAim(1), holdAimUp.current);
   useHoldRepeat(() => onAim(-1), holdAimDown.current);
@@ -102,17 +108,15 @@ export function Hud({
         </div>
 
         <div className="turn-block">
-          <div className={`timer ${timeRatio < 0.25 ? 'timer-low' : ''}`} data-testid="hud-timer">
-            {Math.ceil(snapshot.timeLeft)}
+          <div className={`timer ${countdownRatio < 0.25 ? 'timer-low' : ''}`} data-testid="hud-timer">
+            {countdown}
           </div>
           <div className="turn-meta">
             <span>Turn {snapshot.turn}</span>
-            <span className="turn-worm">
-              {snapshot.phase === 'aim' ? activeWorm?.name ?? '' : 'In flight'}
-            </span>
+            <span className="turn-worm">{phaseLabel}</span>
           </div>
           <div className="timer-bar">
-            <div className="timer-fill" style={{ width: `${Math.max(0, timeRatio) * 100}%` }} />
+            <div className="timer-fill" style={{ width: `${Math.max(0, countdownRatio) * 100}%` }} />
           </div>
         </div>
 
@@ -164,7 +168,7 @@ export function Hud({
             className="pad-btn"
             aria-label="Walk left"
             data-testid="btn-left"
-            disabled={!playerTurn}
+            disabled={!canSteer}
             onPointerDown={(e) => {
               e.currentTarget.setPointerCapture(e.pointerId);
               onMove(-1);
@@ -218,7 +222,7 @@ export function Hud({
             className="pad-btn"
             aria-label="Walk right"
             data-testid="btn-right"
-            disabled={!playerTurn}
+            disabled={!canSteer}
             onPointerDown={(e) => {
               e.currentTarget.setPointerCapture(e.pointerId);
               onMove(1);

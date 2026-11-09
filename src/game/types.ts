@@ -138,4 +138,8 @@ export interface GameSnapshot {
   teams: TeamSnapshot[];
   winnerTeam: number | null;
   aiThinking: boolean;
+  /** Seconds left in the post-fire movement window. */
+  retreatLeft: number;
+  /** Shortest lit fuse among projectiles in flight, or null. */
+  fuseLeft: number | null;
 }
