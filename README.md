@@ -1,6 +1,8 @@
 # Wormage
 
-A turn-based artillery duel in the browser: two teams of three worms, one destructible island, wind that ruins your best shot. A portfolio piece built on a production-grade front-end stack — **React + strict TypeScript + PixiJS + TanStack Query + Axios + MSW + Playwright**.
+A turn-based artillery duel in the browser: two teams of three worms, one destructible island, wind that ruins your best shot. The first playable version of Wormage, built on a production-grade front-end stack — **React + strict TypeScript + PixiJS + TanStack Query + Axios + MSW + Playwright**.
+
+> **Demo build.** This is the first playable version of Wormage. Campaign, progression and online play are on the [roadmap](docs/ROADMAP.md).
 
 **Live demo:** [wormage.flabs.tech](https://wormage.flabs.tech).
 
@@ -11,6 +13,12 @@ A turn-based artillery duel in the browser: two teams of three worms, one destru
 Artillery is a small ruleset with unusually demanding engineering underneath: destructible pixel terrain, ballistics bent by wind, a turn state machine, and an opponent that has to solve the same equations the player does. Around that loop sits a real product surface: typed configuration, a mocked REST backend with pagination, idempotent match writes, persistent settings and a documented test suite.
 
 The genre also forces the separation this project is built around: the simulation cannot depend on the renderer, the frame rate or React.
+
+## One developer, one demo, a bigger game
+
+Wormage is built in the open by one developer — [Fabio Borges](https://flabs.tech), a full-stack and AI engineer from Joinville, Brazil. The live build is the first version: a complete artillery skirmish that proves the core. The real game adds a campaign, progression, online matches and a server that owns the result.
+
+The [full story](docs/ABOUT.md) explains what exists today, what comes next and why the project is built in public. The [roadmap](docs/ROADMAP.md) tracks the milestones.
 
 ## Stack
 
