@@ -77,6 +77,14 @@ export function MainMenu({ settings, player, onStart, onSaveSettings, lastResult
                 Three worms a side. One shrinking island. Curve a rocket over the ridge, read the wind, and erase the
                 ground under their boots before they do it to you.
               </p>
+              <p className="demo-note" data-testid="demo-note">
+                <strong>Demo build.</strong> This is the first playable version of Wormage. Campaign, progression and
+                online play are on the{' '}
+                <a href="https://github.com/fworks-tech/wormage/milestones" target="_blank" rel="noreferrer">
+                  roadmap
+                </a>
+                .
+              </p>
               <div className="hero-actions">
                 <button type="button" className="primary-btn big" onClick={onStart} data-testid="btn-play">
                   Deploy

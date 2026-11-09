@@ -311,6 +311,26 @@ a {
   color: #c7d3cd;
 }
 
+.demo-note {
+  max-width: 56ch;
+  margin-top: 18px;
+  padding-left: 12px;
+  border-left: 2px solid var(--amber);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.demo-note strong {
+  color: var(--amber);
+}
+
+.demo-note a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .hero-actions {
   display: flex;
   gap: 12px;
