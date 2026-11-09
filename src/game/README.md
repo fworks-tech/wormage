@@ -8,7 +8,8 @@ This folder has **no React imports**. It can be unit-tested or moved to a worker
 | `types.ts` | contracts shared by engine, renderer and UI (`GameSnapshot`, `WeaponDef`, `GameEvent`…) |
 | `terrain.ts` | seeded island generator, 4 px collision bitmask, destructible canvas, crater carving |
 | `engine.ts` | turn state machine, input actions, worm physics, projectiles, damage, scoring, AI scheduling |
-| `ai.ts` | ballistic forward simulation (`simulateShot`), shot planner (`planAiShot`), angle helpers |
+| `aim.ts` | bounded aim reticle: fixed-radius circle, stops on terrain inside it |
+| `ai.ts` | ballistic forward simulation (`simulateShot`), turn planner (`planAiTurn`), fallback shot planner, angle helpers |
 | `renderer.ts` | Pixi application, scene graph, worms, particles, aim preview, camera shake, resize/letterbox |
 | `audio.ts` | WebAudio synth for fire/explosion/jump/turn/victory |
 
@@ -33,6 +34,6 @@ GameView tick
 ## Adding a weapon
 
 1. Extend `WeaponId` in `types.ts`.
-2. Add a `WeaponDef` to `WEAPONS` and to `WEAPON_ORDER` in `config.ts`.
+2. Add a `WeaponDef` (marked `projectile` or `drop`) to `WEAPONS` and to `WEAPON_ORDER` in `config.ts`.
 3. Add a `drawProjectile` branch in `renderer.ts` (visual only).
 4. Ammo, damage, blast radius, wind and gravity are picked up automatically by the engine, AI and preview.

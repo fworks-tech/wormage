@@ -62,7 +62,7 @@ npm run test:e2e       # Playwright (uses installed Chrome)
 
 Three worms per side, 100 HP each. Wipe out the other team to win. The turn timer ends your turn, not the match. Falling into water is fatal; long falls hurt. Self-damage is on, as tradition demands.
 
-Weapons: **Bazooka** (unlimited, 42 dmg), **Grenade** (3 bounces, 3s fuse), **Shotgun** (4 flat shots), **Dynamite** (2, 4.2s fuse, huge crater).
+Weapons: **Bazooka** (unlimited, 42 dmg), **Grenade** (3 bounces, 3s fuse), **Shotgun** (4 flat shots), **Dynamite** (2, 2.2s fuse, huge crater). After firing you have three seconds to walk before the turn passes — enough to leave your own blast.
 
 ## Architecture at a glance
 
