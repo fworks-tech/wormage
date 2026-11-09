@@ -453,6 +453,7 @@ export class GameEngine {
     const survivors: Projectile[] = [];
     for (const p of this.projectiles) {
       const def = WEAPONS[p.weapon];
+      const drops = def.kind === 'drop';
       p.age += dt;
       p.trailTimer += dt;
 
@@ -473,14 +474,16 @@ export class GameEngine {
         const nx = p.x + p.vx * sdt;
         const ny = p.y + p.vy * sdt;
 
-        const victim = this.teams
-          .flatMap((team) => team.worms)
-          .find(
-            (w) =>
-              w.alive &&
-              !(w.id === this.activeWormId && p.age < 0.14) &&
-              Math.hypot(w.x - nx, w.y - 13 - ny) < 14 + WORM.radius * 0.4,
-          );
+        const victim = drops
+          ? undefined
+          : this.teams
+              .flatMap((team) => team.worms)
+              .find(
+                (w) =>
+                  w.alive &&
+                  !(w.id === this.activeWormId && p.age < 0.14) &&
+                  Math.hypot(w.x - nx, w.y - 13 - ny) < 14 + WORM.radius * 0.4,
+              );
         if (victim) {
           if (p.weapon === 'shotgun') {
             this.hurt(victim, def.damage, p.x, p.y, p.teamId);
@@ -494,6 +497,12 @@ export class GameEngine {
         }
 
         if (this.terrain.isSolid(nx, ny)) {
+          if (drops) {
+            // A thrown charge rests where it lands; only the fuse sets it off.
+            p.vx = 0;
+            p.vy = 0;
+            break;
+          }
           if (def.bounces) {
             const hitX = this.terrain.isSolid(nx, p.y);
             const hitY = this.terrain.isSolid(p.x, ny);

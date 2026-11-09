@@ -141,6 +141,21 @@ test('dynamite fuses down and explodes before the turn passes', async ({ page })
 
   await page.getByTestId('weapon-dynamite').click();
   await page.getByTestId('btn-fire').click();
+
+  // A dropped charge burns its fuse instead of detonating on contact with the thrower.
+  const midFuse = await page.evaluate(() => {
+    const engine = (
+      window as never as {
+        __WORMAGE__: { engine: { update: (dt: number) => void; snapshot: () => Snapshot } };
+      }
+    ).__WORMAGE__.engine;
+    for (let i = 0; i < 10; i += 1) engine.update(0.1);
+    const state = engine.snapshot();
+    return { fuseLeft: state.fuseLeft, hp: state.teams[0].hp };
+  });
+  expect(midFuse.fuseLeft).toBeGreaterThan(0);
+  expect(midFuse.hp).toBe(hpBefore);
+
   await page.waitForFunction(() => {
     const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
     return state.fuseLeft !== null && state.fuseLeft <= 2.2;
