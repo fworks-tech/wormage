@@ -143,9 +143,8 @@ test('dynamite fuses down and explodes before the turn passes', async ({ page })
   await page.getByTestId('btn-fire').click();
   await page.waitForFunction(() => {
     const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
-    return state.fuseLeft !== null;
+    return state.fuseLeft !== null && state.fuseLeft <= 2.2;
   });
-  expect((await snapshot(page)).fuseLeft!).toBeLessThanOrEqual(2.2);
 
   await page.waitForFunction(
     () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().turn >= 2,
