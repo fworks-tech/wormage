@@ -11,7 +11,7 @@ The GitHub milestones are the source of truth for scope and status. This page mi
 | **M4a — Hotseat** | Two players, one device | #17 | Turn handoff, hidden information and end-of-match flow work without a server |
 | **M4b — Authoritative online** | Online matches with a trusted result | #18 | Server validates actions, stores action logs and replays matches; clients sync by polling |
 | **M5 — Campaign + progression** | RPG layer | #19 | Missions, bosses, XP/levels and unlocks persist per account |
-| **M6 — Multiplatform** | Installable on every screen | #20 | Installable PWA, offline shell, touch parity and the same profile across devices; native wrapper optional (ADR 0008) |
+| **M6 — Multiplatform** | Installable on every screen | #20 | Installable PWA, offline shell, touch parity and the same profile across devices; native wrapper optional |
 
 ## Milestone detail
 
@@ -21,7 +21,7 @@ In progress. Rename, runtime namespace, turn-end bug, single weapon physics sour
 
 ### M1 — Reproducible core
 
-- Fixed 60 Hz timestep (ADR 0006).
+- Fixed 60 Hz timestep (ADR 0005).
 - Vitest and engine unit tests.
 - Deterministic replay of an action log.
 - Terrain collision split from the canvas painter.
@@ -29,11 +29,11 @@ In progress. Rename, runtime namespace, turn-end bug, single weapon physics sour
 
 ### M2 — Content pipeline
 
-Data-driven weapons, maps, modes and missions (ADR 0005), with schema validation and stable IDs.
+Data-driven weapons, maps, modes and missions (ADR 0004), with schema validation and stable IDs.
 
 ### M3 — AWS foundation
 
-CDK, API Gateway HTTP API, Lambda, DynamoDB and the first real endpoints (ADR 0003).
+CDK, API Gateway HTTP API, Lambda, DynamoDB and the first real endpoints (ADR 0002).
 
 ### M4a — Hotseat
 
@@ -41,15 +41,15 @@ Local two-player turns on one device. Proves the turn handoff before networking 
 
 ### M4b — Authoritative online
 
-Server-authoritative play with action-log replay (ADR 0004). Multiplayer follows the staged path: hotseat → challenge links → authoritative online.
+Server-authoritative play with action-log replay (ADR 0003). Multiplayer follows the staged path: hotseat → challenge links → authoritative online.
 
 ### M5 — Campaign + progression
 
-Authored missions, bosses, XP, levels and unlocks (ADR 0007).
+Authored missions, bosses, XP, levels and unlocks on the content schema from ADR 0004.
 
 ### M6 — Multiplatform
 
-PWA install, offline shell and touch parity (ADR 0008), with an optional Capacitor wrapper and cloud save when the ADR's trigger is met.
+PWA install, offline shell and touch parity, with an optional Capacitor wrapper and cloud save if store discovery or a platform API becomes a measured blocker.
 
 ## Working agreement
 

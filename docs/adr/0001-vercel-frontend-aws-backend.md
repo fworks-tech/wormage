@@ -1,4 +1,4 @@
-# 0002. Vercel frontend, AWS backend
+# 0001. Vercel frontend, AWS backend
 
 - **Status:** Accepted
 - **Date:** 2026-11-09

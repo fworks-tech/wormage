@@ -1,4 +1,4 @@
-# 0003. AWS serverless stack and polling
+# 0002. AWS serverless stack and polling
 
 - **Status:** Accepted
 - **Date:** 2026-11-09

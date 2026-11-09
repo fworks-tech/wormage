@@ -1,4 +1,4 @@
-# 0006. Fixed 60 Hz simulation step
+# 0005. Fixed 60 Hz simulation step
 
 - **Status:** Accepted
 - **Date:** 2026-11-09
@@ -23,4 +23,4 @@ The simulation advances in **fixed 1/60 s steps** through an accumulator. Render
 - Trajectories become reproducible for a given seed, action sequence and engine version.
 - The engine loop, AI simulation and tests must use the same step function.
 - Rendering needs interpolation to avoid visible stutter.
-- Floating-point math is still platform-dependent in theory; the server-as-authority model in ADR 0004 makes that acceptable in practice.
+- Floating-point math is still platform-dependent in theory; the server-as-authority model in ADR 0003 makes that acceptable in practice.

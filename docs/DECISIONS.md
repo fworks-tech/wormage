@@ -2,7 +2,7 @@
 
 Short ADR-style notes for the choices that shaped the codebase. Each entry says what was decided, why, and what it costs.
 
-Cross-cutting architecture and roadmap decisions — hosting, AWS, online play, the content pipeline, campaign and multiplatform — live in [docs/adr/](adr/README.md). The notes below stay here because they describe code that already exists.
+Cross-cutting architecture decisions — hosting, AWS, online play, the content pipeline and the simulation timestep — live in [docs/adr/](adr/README.md). The notes below stay here because they describe code that already exists.
 
 ## 1. Artillery instead of a conventional arena shooter
 

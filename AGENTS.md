@@ -15,7 +15,7 @@ Live build: <https://wormage.flabs.tech>. Vercel auto-deploys `main`.
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | layers, frame loop, terrain, combat rules, AI |
 | [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | every tunable number and where it lives |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | code-level trade-offs that already exist |
-| [docs/adr/](docs/adr/README.md) | cross-cutting decisions: hosting, AWS, online play, content pipeline, timestep, campaign, PWA |
+| [docs/adr/](docs/adr/README.md) | cross-cutting architecture decisions: hosting, AWS, online play, content pipeline, timestep |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | milestones and current scope |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | branch, commit and PR rules |
 
@@ -60,7 +60,7 @@ Playwright uses the installed Chrome (`channel: 'chrome'`); do not download brow
 - **Numbers live in `config.ts`.** Balance changes should not touch `engine.ts`, the renderer or React.
 - **Weapons are data.** Add a `WeaponDef` to `WEAPONS` and `WEAPON_ORDER`; keep its physics in the same shape as the others.
 - **The renderer is read-only and disposable.** If it disappears, the match still resolves.
-- **The timestep is not deterministic yet.** `engine.update(dt)` receives the renderer delta; ADR 0006's fixed 60 Hz step is planned, not shipped. Do not claim replays or cross-machine determinism until it lands.
+- **The timestep is not deterministic yet.** `engine.update(dt)` receives the renderer delta; ADR 0005's fixed 60 Hz step is planned, not shipped. Do not claim replays or cross-machine determinism until it lands.
 - **The AI has no pathfinding.** If a planned or current position is unreachable or blocked, fall back to a shot from where the worm stands; never teleport.
 
 ## Workflow

@@ -1,4 +1,4 @@
-# 0004. Server-authoritative online play
+# 0003. Server-authoritative online play
 
 - **Status:** Accepted
 - **Date:** 2026-11-09

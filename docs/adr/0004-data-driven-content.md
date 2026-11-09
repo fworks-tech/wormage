@@ -1,4 +1,4 @@
-# 0005. Weapons, maps and modes as data
+# 0004. Weapons, maps and modes as data
 
 - **Status:** Accepted
 - **Date:** 2026-11-09
