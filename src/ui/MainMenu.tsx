@@ -47,7 +47,7 @@ export function MainMenu({ settings, player, onStart, onSaveSettings, lastResult
           <span className="wordmark-mark" aria-hidden>
             ☠
           </span>
-          WORMAGEDDON
+          WORMAGE
         </div>
         <nav className="tabs" aria-label="Menu sections">
           {TABS.map((item) => (
@@ -71,8 +71,7 @@ export function MainMenu({ settings, player, onStart, onSaveSettings, lastResult
             <section className="hero-copy">
               <p className="eyebrow">Turn-based artillery · 1v1 vs CPU</p>
               <h1 className="wordmark">
-                WORM
-                <span>AGEDDON</span>
+                WORM<span>AGE</span>
               </h1>
               <p className="lede">
                 Three worms a side. One shrinking island. Curve a rocket over the ridge, read the wind, and erase the

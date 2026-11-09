@@ -1,6 +1,6 @@
 # Architecture
 
-Wormageddon is a single-page React app wrapped around a self-contained PixiJS game. The design goal is the one the challenge grades: **the rules must not depend on the renderer, the frame rate, or React.**
+Wormage is a single-page React app wrapped around a self-contained PixiJS game. The design goal is the one the challenge grades: **the rules must not depend on the renderer, the frame rate, or React.**
 
 ## 1. Layers
 

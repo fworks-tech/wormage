@@ -1,4 +1,4 @@
-# Wormageddon
+# Wormage
 
 A turn-based artillery duel in the browser: two teams of three worms, one destructible island, wind that ruins your best shot. A portfolio piece built on a production-grade front-end stack — **React + strict TypeScript + PixiJS + TanStack Query + Axios + MSW + Playwright**.
 
