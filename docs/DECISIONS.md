@@ -2,6 +2,8 @@
 
 Short ADR-style notes for the choices that shaped the codebase. Each entry says what was decided, why, and what it costs.
 
+Cross-cutting architecture decisions — hosting, AWS, online play, the content pipeline and the simulation timestep — live in [docs/adr/](adr/README.md). The notes below stay here because they describe code that already exists.
+
 ## 1. Artillery instead of a conventional arena shooter
 
 A top-down shooter is a well-trodden demo: bullets, spawns and a score counter. Artillery asks for more interesting machinery — destructible geometry, ballistic arcs, wind, a turn state machine and an opponent that must plan — while still needing the same product scaffolding around it.
