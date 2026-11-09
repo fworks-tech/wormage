@@ -270,7 +270,7 @@ export class GameEngine {
   }
 
   endTurn(): void {
-    if (this.phase === 'gameover' || this.phase === 'settle') return;
+    if (this.phase !== 'aim' || this.charging) return;
     this.finishTurn();
   }
 
