@@ -8,6 +8,8 @@ type Snapshot = {
   power: number;
   weapon: string;
   timeLeft: number;
+  retreatLeft: number;
+  fuseLeft: number | null;
   teams: Array<{ hp: number; worms: Array<{ alive: boolean; x: number; y: number }> }>;
 };
 
@@ -20,6 +22,13 @@ const startMatch = async (page: import('@playwright/test').Page) => {
 
 const snapshot = (page: import('@playwright/test').Page) =>
   page.evaluate(() => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot());
+
+const activeX = (page: import('@playwright/test').Page) =>
+  page.evaluate(
+    () =>
+      (window as never as { __WORMAGE__: { engine: { activeWorm: { x: number } | null } } }).__WORMAGE__.engine
+        .activeWorm?.x ?? null,
+  );
 
 test('firing runs a projectile and hands the turn to the AI', async ({ page }) => {
   await startMatch(page);
@@ -98,6 +107,83 @@ test('pause freezes the turn timer until resumed', async ({ page }) => {
   await page.getByTestId('btn-resume').click();
   await page.waitForTimeout(700);
   expect((await snapshot(page)).timeLeft).toBeLessThan(frozen);
+});
+
+test('the shooter can retreat during the post-fire window', async ({ page }) => {
+  await startMatch(page);
+  await page.getByTestId('btn-fire').click();
+  await page.waitForFunction(() => {
+    const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
+    return state.phase === 'projectile' || state.phase === 'settle';
+  });
+  expect((await snapshot(page)).retreatLeft).toBeGreaterThan(0);
+
+  const before = await activeX(page);
+  await page.keyboard.down('a');
+  await page.waitForTimeout(500);
+  await page.keyboard.up('a');
+
+  const after = await activeX(page);
+  expect(after).not.toBeNull();
+  expect(after!).toBeLessThan(before!);
+  expect((await snapshot(page)).turn).toBe(1);
+
+  await page.waitForFunction(
+    () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().turn >= 2,
+    undefined,
+    { timeout: 15000 },
+  );
+});
+
+test('dynamite fuses down and explodes before the turn passes', async ({ page }) => {
+  await startMatch(page);
+  const hpBefore = (await snapshot(page)).teams[0].hp;
+
+  await page.getByTestId('weapon-dynamite').click();
+  await page.getByTestId('btn-fire').click();
+
+  // A dropped charge burns its fuse instead of detonating on contact with the thrower.
+  const midFuse = await page.evaluate(() => {
+    const engine = (
+      window as never as {
+        __WORMAGE__: { engine: { update: (dt: number) => void; snapshot: () => Snapshot } };
+      }
+    ).__WORMAGE__.engine;
+    for (let i = 0; i < 10; i += 1) engine.update(0.1);
+    const state = engine.snapshot();
+    return { fuseLeft: state.fuseLeft, hp: state.teams[0].hp };
+  });
+  expect(midFuse.fuseLeft).toBeGreaterThan(0);
+  expect(midFuse.hp).toBe(hpBefore);
+
+  await page.waitForFunction(() => {
+    const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
+    return state.fuseLeft !== null && state.fuseLeft <= 2.2;
+  });
+
+  await page.waitForFunction(
+    () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().turn >= 2,
+    undefined,
+    { timeout: 15000 },
+  );
+  expect((await snapshot(page)).teams[0].hp).toBeLessThan(hpBefore);
+});
+
+test('the AI plans, fires and hands the turn back', async ({ page }) => {
+  await startMatch(page);
+  await page.getByTestId('btn-end-turn').click();
+  await page.waitForFunction(
+    () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().turn === 2,
+    undefined,
+    { timeout: 5000 },
+  );
+
+  await page.waitForFunction(
+    () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().turn >= 3,
+    undefined,
+    { timeout: 25000 },
+  );
+  expect((await snapshot(page)).activeTeam).toBe(0);
 });
 
 test('ending the turn switches sides without damage', async ({ page }) => {

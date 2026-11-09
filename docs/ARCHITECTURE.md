@@ -61,18 +61,24 @@ Destruction (`Terrain.carve`) zeroes the mask circle and punches the same circle
 ### Turn state machine
 
 ```
-aim ──fire──▶ projectile ──(no projectiles)──▶ settle ──0.85s──▶ next turn
- │                                                                  ▲
- └──────────────── timer 0 / end turn ──────────────────────────────┘
+aim ──fire──▶ projectile ──(no projectiles)──▶ settle
+ │                                              │
+ │                          settle + retreat window over
+ │                                              ▼
+ └───────── timer 0 / end turn ────────────▶ next turn
 ```
+
+The projectile and settle phases also run a 3 s retreat window (`RETREAT_SECONDS`): the shooter may keep walking, and the turn only passes once the settle delay and the window are both over. The dynamite fuse (2.2 s) is shorter than the window, so its blast resolves first.
 
 `gameover` is terminal: `update` returns immediately, so movement, damage, AI and the clock all stop together. The result payload is built once and handed to React.
 
 ## 5. AI
 
-`planAiShot` brute-forces 66 candidate (angle, power) pairs by running the **real** projectile integrator (`simulateShot`) and scoring the landing distance to the nearest enemy worm. It penalises solutions that land within 70 px of the shooter (suicide), then applies difficulty-scaled jitter to angle and power.
+`planAiTurn` plans the whole turn. It builds walkable firing positions within the part of the turn it can spend walking, then evaluates bazooka, grenade, shotgun and dynamite from each one by running the **real** projectile integrator (`simulateShot`). A shot is scored by damage to enemies minus a penalty for friendly and self damage; dynamite is only considered when the worm can leave its blast before the 2.2 s fuse ends. The plan also picks a retreat spot within the 3 s window, away from the enemy and outside that blast.
 
-Because the solver and the game share one integrator, the CPU never "cheats" — it just searches better than a human can. The player's aim preview uses the same function for the dotted arc and impact crosshair.
+The engine walks the AI worm to `fireX`, fires the chosen weapon, then steers the same worm to `retreatX` while the retreat window is open. If the path is blocked or the turn clock runs low, it falls back to the legacy `planAiShot` bazooka solution from where it stands. Difficulty jitter is applied to projectile angle and power; a dynamite drop has neither.
+
+Because the solver and the game share one integrator, the CPU never "cheats" — it just searches better than a human can. The player's aim preview uses the same function for the dotted arc, while the reticle itself is the bounded aim indicator from `aim.ts` (not an impact prediction).
 
 ## 6. Rendering
 

@@ -93,3 +93,17 @@ Persisted state is small and synchronous: settings, player identity, last result
 
 **Why:** a hidden tab should not keep the turn timer running or the AI firing. Requiring an explicit action also means no queued inputs fire the instant the tab returns.
 **Cost:** clicking outside the window mid-turn pauses the game, which can feel abrupt until the pause card explains it.
+
+## 14. The reticle is an aim indicator, not a prediction
+
+`aimPoint` marches the aim ray up to `AIM.radius` and stops on the first terrain it meets; otherwise it returns the point on the circle. The dotted trajectory keeps using `simulateShot`, so the real physics stay visible.
+
+**Why:** an impact-predicting reticle can sit far outside the arena or on a surface the player cannot reason about, and it duplicates information the arc already gives.
+**Cost:** the reticle no longer tells you exactly where a bouncing grenade will stop. The dots are the authoritative hint.
+
+## 15. The AI plans movement, weapon and retreat together
+
+`planAiTurn` searches positions reachable within the turn, evaluates every weapon with the shared integrator, and returns a firing spot plus a retreat spot. Dynamite is only a candidate when the escape walk clears its own blast.
+
+**Why:** a CPU that fires from wherever it spawned makes weapon choice meaningless and cannot use short-fuse weapons without killing itself.
+**Cost:** one planning pass costs a few milliseconds when the AI turn starts; the search is bounded by the walk budget and does not pathfind around walls (the engine stops at an obstruction and falls back to a bazooka shot).

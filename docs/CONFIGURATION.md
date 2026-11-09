@@ -25,7 +25,9 @@ Every gameplay number lives in `src/game/config.ts`. Balance changes should neve
 | `WORM.fallSafePx` | 150 | px | free fall before damage |
 | `WORM.fallDamagePerPx` | 0.16 | HP/px | linear after the safe distance |
 | `AIM.min` / `AIM.max` | -3.04 / -0.1 | rad | upper half-plane only |
+| `AIM.radius` | 130 | px | the reticle never leaves this circle around the worm |
 | `CHARGE_SECONDS` | 1.1 | s | time from 0 to 100% power |
+| `RETREAT_SECONDS` | 3 | s | post-fire movement window before the turn passes |
 
 `WIND_ACCEL` maps the three wind settings to maximum wind units (`off: 0`, `light: 46`, `strong: 105`). Actual wind is re-rolled each turn in `[-max, +max]`, then applied to projectiles as `wind * windScale * 0.9` px/s².
 
@@ -35,6 +37,7 @@ Every gameplay number lives in `src/game/config.ts`. Balance changes should neve
 
 | Property | Meaning |
 | --- | --- |
+| `kind` | `projectile` (drawn with a reticle) or `drop` (placed at the worm, no reticle) |
 | `ammo` | `null` = infinite, otherwise per-team stock per match |
 | `damage` | base damage at the centre of the blast |
 | `radius` | damage radius (px) |
@@ -45,17 +48,18 @@ Every gameplay number lives in `src/game/config.ts`. Balance changes should neve
 | `fuse` | seconds before detonation, `null` = detonate on impact |
 | `bounces` | reflects off terrain with 0.45 damping |
 
-Current loadout: bazooka 42 dmg / 48 px, grenade 52 / 54 with 3 s fuse, shotgun 24 / 12 (flat, 0.34 s life), dynamite 78 / 78 with 4.2 s fuse.
+Current loadout: bazooka 42 dmg / 48 px, grenade 52 / 54 with 3 s fuse, shotgun 24 / 12 (flat, 0.34 s life), dynamite 78 / 78 with a 2.2 s fuse (a drop weapon).
 
 Damage falloff: `max(0.22, 1 - distance / (radius + 11))`. A worm on the edge still takes 22%.
 
 ## Difficulty
 
-`DIFFICULTY[difficulty].angleError` and `.powerError` are the half-width of random jitter applied to the AI's best solved shot. Rookie ≈ 4.3°/9% power, Veteran ≈ 2°/4.5%, Elite ≈ 0.7°/1.5%. The solver itself is identical.
+`DIFFICULTY[difficulty].angleError` and `.powerError` are the half-width of random jitter applied to the AI's best solved shot. Rookie ≈ 4.3°/9% power, Veteran ≈ 2°/4.5%, Elite ≈ 0.7°/1.5%. The solver itself is identical; a dynamite drop has no angle or power to jitter.
 
 ## Match rules
 
 - Turn timer: 20–90 s in 5 s steps (`TURN_SECONDS`), default 45.
+- After firing, the shooter may walk for up to 3 s (`RETREAT_SECONDS`) before the turn passes.
 - Teams: 3 worms each, 100 HP.
 - Scoring: `kills × 100 + surviving HP + 150 win bonus + max(0, 420 - elapsed)`.
 - End reasons: `wipeout`, `surrender` (the result screen also understands `time` for fixture data).
@@ -84,5 +88,5 @@ Reset with **Reset demo data** in Options, or `localStorage.removeItem('wormage.
 
 - **Faster, bloodier matches:** `WORM.maxHp = 70`, bazooka `damage = 55`.
 - **No wind:** settings only, no code change (`wind: 'off'`).
-- **New weapon:** add to `WeaponId`, `WEAPONS`, `WEAPON_ORDER`, then a `drawProjectile` branch.
+- **New weapon:** add to `WeaponId`, `WEAPONS` (with `kind`), `WEAPON_ORDER`, then a `drawProjectile` branch.
 - **Longer matches:** raise `turnSeconds` in Options; the board separates rulesets automatically.

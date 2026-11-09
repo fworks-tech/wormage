@@ -110,15 +110,20 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
       const isPaused = pausedRef.current;
 
       if (!isPaused) {
-        if (engine.phase === 'aim') {
-          if (keysRef.current.has('ArrowLeft') || keysRef.current.has('KeyA')) engine.setMove(-1);
-          else if (keysRef.current.has('ArrowRight') || keysRef.current.has('KeyD')) engine.setMove(1);
-          else engine.setMove(0);
+        // The AI drives its own worm; player input only steers on human turns.
+        if (!engine.teams[engine.activeTeam].isAi) {
+          if (engine.phase === 'aim' || engine.retreatActive) {
+            if (keysRef.current.has('ArrowLeft') || keysRef.current.has('KeyA')) engine.setMove(-1);
+            else if (keysRef.current.has('ArrowRight') || keysRef.current.has('KeyD')) engine.setMove(1);
+            else engine.setMove(0);
 
-          if (keysRef.current.has('ArrowUp') || keysRef.current.has('KeyW')) engine.aimBy(AIM.rate * dt);
-          if (keysRef.current.has('ArrowDown') || keysRef.current.has('KeyS')) engine.aimBy(-AIM.rate * dt);
-        } else {
-          engine.setMove(0);
+            if (engine.phase === 'aim') {
+              if (keysRef.current.has('ArrowUp') || keysRef.current.has('KeyW')) engine.aimBy(AIM.rate * dt);
+              if (keysRef.current.has('ArrowDown') || keysRef.current.has('KeyS')) engine.aimBy(-AIM.rate * dt);
+            }
+          } else {
+            engine.setMove(0);
+          }
         }
 
         engine.update(dt);
