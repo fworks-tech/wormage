@@ -117,7 +117,7 @@ Match registration is idempotent on `clientMatchId`: a retry after a timeout ret
 
 - Playwright drives real clicks/keys and asserts engine state through `window.__WORMAGE__` (documented as instrumentation, not a gameplay shortcut).
 - Deterministic seeds are passed via `?seed=123` (ruleset snapshot) so terrain and AI jitter are reproducible.
-- Visual baselines cover the menu, a settled arena and the result card.
+- Visual baselines are planned for M1; the suite currently asserts state, not pixels.
 - The mock layer supports deterministic latency/failure scenarios, which is how the loading/empty/error and duplicate-write tests are written.
 
 See `tests/` for the suites and `docs/DECISIONS.md` for why these choices were made.
