@@ -19,6 +19,7 @@ import { clampAngle, mirrorAngle, planAiShot, planAiTurn } from './ai';
 import type { AiTurnPlan } from './ai';
 import { configKey } from './types';
 import type {
+  ActionLogEntry,
   EndReason,
   GameAction,
   GameEvent,
@@ -30,12 +31,6 @@ import type {
   WeaponId,
   Worm,
 } from './types';
-
-/** One recorded input, stamped with the tick it was applied before. */
-export interface ActionLogEntry {
-  tick: number;
-  action: GameAction;
-}
 
 const WORM_NAMES = [
   ['Sarge', 'Biscuit', 'Mags'],
