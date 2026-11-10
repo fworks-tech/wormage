@@ -26,6 +26,7 @@ Every gameplay number lives in `src/game/config.ts`. Balance changes should neve
 | `WORM.fallDamagePerPx` | 0.16 | HP/px | linear after the safe distance |
 | `AIM.min` / `AIM.max` | -3.04 / -0.1 | rad | upper half-plane only |
 | `AIM.radius` | 130 | px | the reticle never leaves this circle around the worm |
+| `FIXED_DT` | 1/60 | s | simulation step; rendering may run at any frame rate |
 | `CHARGE_SECONDS` | 1.1 | s | time from 0 to 100% power |
 | `RETREAT_SECONDS` | 3 | s | post-fire movement window before the turn passes |
 | `PREVIEW_SECONDS` | 3 | s | free-flight span the dotted aim preview samples when a weapon has no fuse or life |
