@@ -1,4 +1,5 @@
 import {
+  AIM,
   BOUNCE,
   GRAVITY,
   PROJECTILE_GRAVITY,
@@ -396,7 +397,7 @@ export function clampAngle(angle: number): number {
   let a = angle;
   while (a > Math.PI) a -= Math.PI * 2;
   while (a < -Math.PI) a += Math.PI * 2;
-  return Math.min(-0.08, Math.max(-Math.PI + 0.08, a));
+  return Math.min(AIM.max, Math.max(AIM.min, a));
 }
 
 /** Keep the fall math shared between worms and projectiles. */

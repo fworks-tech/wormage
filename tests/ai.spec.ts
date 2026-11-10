@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { aimPoint } from '../src/game/aim';
-import { chooseRetreat, planAiTurn, simulateShot } from '../src/game/ai';
+import { chooseRetreat, clampAngle, planAiTurn, simulateShot } from '../src/game/ai';
 import { AIM, RETREAT_SECONDS, WEAPONS, WORM } from '../src/game/config';
 
 /** Flat ground at y = 500, or a wall from x = wallX. No canvas needed. */
@@ -82,6 +82,11 @@ const walled = (...walls: Array<[number, number]>) => ({
 });
 
 const enemy = { id: 'b', teamId: 1, x: 440, y: 500 };
+
+test('the aim clamp uses the configured limits', () => {
+  expect(clampAngle(0)).toBe(AIM.max);
+  expect(clampAngle(-Math.PI)).toBe(AIM.min);
+});
 
 test('the AI never retreats through a wall to escape its own blast', () => {
   // The best blast-safe spot is left of the wall, but the worm cannot get there.
