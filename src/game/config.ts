@@ -8,7 +8,7 @@ export const WATER_Y = 668;
 export const GRAVITY = 780;
 export const PROJECTILE_GRAVITY = 520;
 export const WIND_FACTOR = 0.9;
-export const BOUNCE = { x: 0.45, y: 0.42 } as const;
+export const BOUNCE: { x: number; y: number } = { x: 0.45, y: 0.42 };
 export const WIND_ACCEL: Record<WindSetting, number> = {
   off: 0,
   light: 46,
