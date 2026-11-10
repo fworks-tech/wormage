@@ -75,6 +75,7 @@ Playwright uses the installed Chrome (`channel: 'chrome'`); do not download brow
 5. **Never merge, close or force-push a shared branch without explicit confirmation from the maintainer.** Opening or updating a PR is fine; merging is the maintainer's call.
 6. **Stacks:** target the parent branch as the PR base, note the dependency, and rebase onto `main` after the parent merges. Never merge a child before its parent.
 7. **Keep docs honest.** A previous truth pass removed claims the code did not back (#5, #26). If behavior and docs disagree, fix one of them in the same PR.
+8. **No tool attribution.** Never add `Co-Authored-By`, `Generated with` or any other AI/tool credit to commits, pull requests, issues or docs.
 
 ## Definition of done
 
