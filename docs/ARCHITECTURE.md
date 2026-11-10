@@ -24,6 +24,10 @@ Wormage is a single-page React app wrapped around a self-contained PixiJS game. 
 - `GameView` owns the only loop. It feeds `dt` to the engine, drains `engine.events` to the renderer and the sound kit, then throttles the React snapshot.
 - React never mutates simulation state directly; HUD buttons call callbacks that delegate to the engine.
 
+### Routes
+
+Two static routes and no router dependency. `/demo` plays: New Game dialog → match → result. `/project` is the informational menu (briefing, ranking, history, options). `boot()` in `main.tsx` replaces `/` with `/demo`, keeping `?seed=`; `App.tsx` treats any path starting with `/project` as the project page and everything else as the demo. Vercel's existing rewrite serves `index.html` for both. Navigations are real page loads, which is fine for a static SPA; the single-file build only works from `/` and hides the project link.
+
 ## 2. Frame loop and time
 
 ```ts
