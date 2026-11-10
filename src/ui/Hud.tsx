@@ -47,6 +47,8 @@ export function Hud({
 
   const playerTurn = snapshot.activeTeam === 0 && snapshot.phase === 'aim' && !paused;
   const canSteer = snapshot.activeTeam === 0 && !paused && (snapshot.phase === 'aim' || snapshot.retreatLeft > 0);
+  const canAim = snapshot.activeTeam === 0 && snapshot.phase === 'aim' && !paused;
+  const canJump = snapshot.activeTeam === 0 && snapshot.phase !== 'gameover' && !paused;
   const myTeam = snapshot.teams[0];
   const enemy = snapshot.teams[1];
   const weapon = WEAPONS[snapshot.weapon];
@@ -67,8 +69,8 @@ export function Hud({
     : timeRatio;
   const phaseLabel = inFlight ? (fuseLeft !== null ? 'Fuse' : 'Retreat') : activeWorm?.name ?? '';
 
-  useHoldRepeat(() => onAim(1), holdAimUp.current);
-  useHoldRepeat(() => onAim(-1), holdAimDown.current);
+  useHoldRepeat(() => onAim(1), canAim && holdAimUp.current);
+  useHoldRepeat(() => onAim(-1), canAim && holdAimDown.current);
 
   const disarm = () => {
     onMove(0);
@@ -198,6 +200,9 @@ export function Hud({
               onPointerLeave={() => {
                 holdAimUp.current = false;
               }}
+              onPointerCancel={() => {
+                holdAimUp.current = false;
+              }}
             >
               ▲
             </button>
@@ -214,6 +219,9 @@ export function Hud({
                 holdAimDown.current = false;
               }}
               onPointerLeave={() => {
+                holdAimDown.current = false;
+              }}
+              onPointerCancel={() => {
                 holdAimDown.current = false;
               }}
             >
@@ -236,8 +244,14 @@ export function Hud({
           >
             ▶
           </button>
-          <button type="button" className="pad-btn jump-btn" onClick={onJump} disabled={!playerTurn} data-testid="btn-jump">
-            Jump
+          <button
+            type="button"
+            className="pad-btn jump-btn"
+            onClick={onJump}
+            disabled={!canJump}
+            data-testid="btn-jump"
+          >
+            {snapshot.activeOnGround ? 'Jump' : 'Flip'}
           </button>
         </div>
 
