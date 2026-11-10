@@ -13,6 +13,11 @@ type Snapshot = {
   teams: Array<{ hp: number; worms: Array<{ alive: boolean; x: number; y: number }> }>;
 };
 
+type TerrainHandle = {
+  canvas: HTMLCanvasElement;
+  carve: (x: number, y: number, radius: number) => void;
+};
+
 const startMatch = async (page: import('@playwright/test').Page) => {
   await page.goto('/?seed=4242');
   await page.getByTestId('btn-play').click();
@@ -194,4 +199,19 @@ test('ending the turn switches sides without damage', async ({ page }) => {
   expect(after.activeTeam).toBe(1);
   expect(after.teams[0].hp).toBe(300);
   expect(after.teams[1].hp).toBe(300);
+});
+
+test('carving terrain punches a hole in the canvas instead of tinting it', async ({ page }) => {
+  await startMatch(page);
+  const alpha = await page.evaluate(() => {
+    const terrain = (window as never as { __WORMAGE__: { engine: { terrain: TerrainHandle } } }).__WORMAGE__.engine
+      .terrain;
+    terrain.carve(640, 560, 40);
+    const ctx = terrain.canvas.getContext('2d');
+    if (!ctx) throw new Error('2D canvas is not available');
+    const alphaAt = (x: number, y: number) => ctx.getImageData(x, y, 1, 1).data[3];
+    return { crater: alphaAt(640, 560), ground: alphaAt(640, 660) };
+  });
+  expect(alpha.crater).toBe(0);
+  expect(alpha.ground).toBe(255);
 });

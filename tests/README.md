@@ -29,7 +29,7 @@ Seeds: `/?seed=4242` fixes terrain generation and AI jitter so combat tests are 
 | File | Covers |
 | --- | --- |
 | `menu.spec.ts` | menu, tabs, options validation/persistence, empty and error states, ruleset-scoped board |
-| `combat.spec.ts` | firing, turn handoff, walking and arena bounds, weapon selection, pause/freeze, retreat window, dynamite fuse, end turn |
+| `combat.spec.ts` | firing, turn handoff, walking and arena bounds, weapon selection, pause/freeze, retreat window, dynamite fuse, crater carving, end turn |
 | `ai.spec.ts` | pure-logic checks: reticle radius, AI weapon/firing-spot choice, left-facing aim, retreat and dynamite escape |
 | `data.spec.ts` | result screen, match registration, history/ranking visibility, persistence after refresh |
 
