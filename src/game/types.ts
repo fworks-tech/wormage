@@ -3,6 +3,27 @@ export type Difficulty = 'rookie' | 'veteran' | 'elite';
 export type WindSetting = 'off' | 'light' | 'strong';
 export type EndReason = 'time' | 'wipeout' | 'surrender';
 
+/**
+ * A serializable player input. AI decisions come from the engine's seeded RNG.
+ * shortcut: pointer aim (`setAimFromPoint`) has no action yet; add an `aimAt`
+ * action before recording real matches.
+ */
+export type GameAction =
+  | { type: 'move'; dir: -1 | 0 | 1 }
+  | { type: 'aim'; delta: number }
+  | { type: 'jump' }
+  | { type: 'weapon'; id: WeaponId }
+  | { type: 'startCharge' }
+  | { type: 'releaseCharge' }
+  | { type: 'fire' }
+  | { type: 'endTurn' };
+
+/** One recorded input, stamped with the tick it was applied before. */
+export interface ActionLogEntry {
+  tick: number;
+  action: GameAction;
+}
+
 export interface GameSettings {
   turnSeconds: number;
   wind: WindSetting;

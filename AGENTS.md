@@ -62,7 +62,7 @@ Playwright uses the installed Chrome (`channel: 'chrome'`); do not download brow
 - **Numbers live in `config.ts`.** Balance changes should not touch `engine.ts`, the renderer or React.
 - **Weapons are data.** Add a `WeaponDef` to `WEAPONS` and `WEAPON_ORDER`; keep its physics in the same shape as the others.
 - **The renderer is read-only and disposable.** If it disappears, the match still resolves.
-- **The simulation runs at a fixed 60 Hz.** `GameView` feeds `engine.update(FIXED_DT)` from an accumulator; never pass a frame delta to the engine. Replays are not implemented yet (#12), and cross-machine float determinism stays out of scope (ADR 0003).
+- **The simulation runs at a fixed 60 Hz.** `GameView` feeds `engine.update(FIXED_DT)` from an accumulator; never pass a frame delta to the engine. The engine replays a recorded input log on the same build; there is no replay UI yet, and cross-machine float determinism stays out of scope (ADR 0003).
 - **The AI has no pathfinding.** If a planned or current position is unreachable or blocked, fall back to a shot from where the worm stands; never teleport.
 
 ## Workflow
@@ -103,5 +103,4 @@ Playwright uses the installed Chrome (`channel: 'chrome'`); do not download brow
 
 ## Current gaps (as of this file)
 
-- Deterministic replay is M1 work (#12).
 - Ranking and history still run on MSW fixtures; AWS arrives in M3 (#16).
