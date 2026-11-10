@@ -114,7 +114,19 @@ describe('jump physics', () => {
     expect(worm.vx).toBeLessThan(0);
   });
 
-  test('the AI jumps when its walk is blocked', () => {
+  test('the player jump action cannot move the AI worm', () => {
+    const engine = new GameEngine(config());
+    engine.endTurn();
+    expect(engine.activeTeam).toBe(1);
+
+    const worm = engine.activeWorm!;
+    engine.jump(1);
+
+    expect(worm.vy).toBe(0);
+    expect(engine.events.some((event) => event.type === 'jump')).toBe(false);
+  });
+
+  test('the AI keeps jumping while its walk is blocked', () => {
     const engine = new GameEngine(config());
     const blockedX = 1200;
     Object.assign(engine.terrain, terrain(blockedX));
@@ -142,8 +154,8 @@ describe('jump physics', () => {
     };
     internals.aiThinking = false;
 
-    step(engine, 2.5);
+    step(engine, 5.2);
 
-    expect(engine.events.some((event) => event.type === 'jump')).toBe(true);
+    expect(engine.events.filter((event) => event.type === 'jump').length).toBeGreaterThan(2);
   });
 });

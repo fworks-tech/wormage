@@ -1,4 +1,5 @@
 import {
+  AI,
   AIM,
   BOUNCE,
   CHARGE_SECONDS,
@@ -74,7 +75,7 @@ export class GameEngine {
   private aiPlan: AiTurnPlan | null = null;
   private aiStall = 0;
   private aiLastX = -1;
-  private aiJumpAttempts = 0;
+  private aiJumpDeadline: number | null = null;
   private projectileId = 0;
   private readonly rng: () => number;
   private readonly lastWormByTeam: Record<number, string> = {};
@@ -171,7 +172,7 @@ export class GameEngine {
     this.aiPlan = null;
     this.aiStall = 0;
     this.aiLastX = -1;
-    this.aiJumpAttempts = 0;
+    this.aiJumpDeadline = null;
     this.aiThinking = team.isAi;
     const maxWind = WIND_ACCEL[this.config.wind];
     this.wind = first ? 0 : Math.round((this.rng() * 2 - 1) * maxWind);
@@ -270,7 +271,17 @@ export class GameEngine {
     this.weapon = id;
   }
 
+  /** Player jump input. The AI uses `aiJump`; this guard is authoritative against stale UI snapshots. */
   jump(dir: -1 | 0 | 1 = this.moveDir): void {
+    if (this.teams[this.activeTeam].isAi) return;
+    this.applyJump(dir);
+  }
+
+  private aiJump(dir: -1 | 0 | 1): void {
+    this.applyJump(dir);
+  }
+
+  private applyJump(dir: -1 | 0 | 1): void {
     const worm = this.activeWorm;
     if (!worm || !worm.alive || this.phase === 'gameover') return;
     // Airborne jumps are flips: reset the rise, keep momentum on a neutral flip.
@@ -695,10 +706,16 @@ export class GameEngine {
       // Blocked or out of turn time: take the best bazooka shot from here.
       if (this.aiStall < 1.5 && this.timeLeft > 0.5) return;
 
-      // Two blocked-walk jumps per AI turn, then fall back to a shot so it can act.
-      if (this.aiStall >= 1.5 && this.aiJumpAttempts < 2 && worm.onGround) {
-        this.aiJumpAttempts += 1;
-        this.jump(this.moveDir);
+      // A blocked AI walk keeps flipping for a bounded window, then shoots from here.
+      if (
+        this.aiStall >= 1.5 &&
+        worm.onGround &&
+        (this.aiJumpDeadline === null || this.timeLeft > this.aiJumpDeadline)
+      ) {
+        if (this.aiJumpDeadline === null) {
+          this.aiJumpDeadline = this.timeLeft - AI.jumpWindowSeconds;
+        }
+        this.aiJump(this.moveDir);
         this.aiStall = 0;
         this.aiLastX = worm.x;
         return;

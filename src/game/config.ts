@@ -15,6 +15,12 @@ export const WIND_ACCEL: Record<WindSetting, number> = {
   strong: 105,
 };
 
+/** AI movement heuristics. */
+export const AI = {
+  /** How long a blocked AI walk may keep jumping before it shoots from where it stands. */
+  jumpWindowSeconds: 6,
+} as const;
+
 export const WORM = {
   radius: 11,
   walkSpeed: 74,
