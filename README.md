@@ -41,6 +41,7 @@ No game engine, no physics library, no third-party art. Terrain, worms, explosio
 npm install
 npm run dev            # http://localhost:5173
 npm run typecheck      # strict TS, no emit
+npm test               # Vitest unit tests, no browser
 npm run build          # production bundle in dist/
 npm run build:single   # one self-contained HTML file in dist-single/
 npm run test:e2e       # Playwright (uses installed Chrome)
