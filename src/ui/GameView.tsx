@@ -51,7 +51,11 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
     if (finishedRef.current) return;
     pausedRef.current = value;
     setPaused(value);
-    if (engineRef.current) engineRef.current.moveDir = 0;
+    if (engineRef.current) {
+      engineRef.current.moveDir = 0;
+      // A release under the pause card must not fire the held shot.
+      if (value) engineRef.current.cancelCharge();
+    }
   }, []);
 
   useEffect(() => {

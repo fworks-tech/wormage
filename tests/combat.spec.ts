@@ -6,6 +6,7 @@ type Snapshot = {
   activeTeam: number;
   activeWormId: string;
   power: number;
+  charging: boolean;
   weapon: string;
   timeLeft: number;
   retreatLeft: number;
@@ -112,6 +113,24 @@ test('pause freezes the turn timer until resumed', async ({ page }) => {
   await page.getByTestId('btn-resume').click();
   await page.waitForTimeout(700);
   expect((await snapshot(page)).timeLeft).toBeLessThan(frozen);
+});
+
+test('pausing cancels a charge instead of firing on release', async ({ page }) => {
+  await startMatch(page);
+  await page.keyboard.down('Space');
+  await page.waitForFunction(
+    () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().charging,
+  );
+
+  await page.getByTestId('btn-pause').click();
+  await page.keyboard.up('Space');
+  await page.waitForTimeout(150);
+  await page.getByTestId('btn-resume').click();
+  await page.waitForTimeout(300);
+
+  const after = await snapshot(page);
+  expect(after.phase).toBe('aim');
+  expect(after.power).toBe(0);
 });
 
 test('the shooter can retreat during the post-fire window', async ({ page }) => {

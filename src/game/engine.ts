@@ -211,6 +211,11 @@ export class GameEngine {
     this.fire();
   }
 
+  cancelCharge(): void {
+    this.charging = false;
+    this.power = 0;
+  }
+
   selectWeapon(id: WeaponId): void {
     if (this.phase !== 'aim') return;
     const ammo = this.teams[this.activeTeam].ammo[id];

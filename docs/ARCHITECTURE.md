@@ -35,7 +35,7 @@ renderer.render(dt, paused);
 - `dt` is clamped so a background tab returning after ten seconds cannot teleport worms through terrain.
 - Movement, gravity, fuses, turn timers and AI delays are all expressed in seconds, never in frames.
 - Projectiles advance in substeps sized by velocity (`ceil(speed * dt / 5)`), which prevents tunnelling through thin terrain at 1500 px/s.
-- Pausing stops `engine.update` entirely. The renderer keeps drawing the frozen state, and fuses/timers resume from the same value. Resuming is an explicit user action.
+- Pausing stops `engine.update` entirely. The renderer keeps drawing the frozen state, and fuses/timers resume from the same value. Resuming is an explicit user action. Pausing also cancels a charge in progress, so a key or pointer release under the pause card cannot fire.
 
 ## 3. Terrain
 
