@@ -160,23 +160,37 @@ test('the fuse countdown shows the real fuse and scales its bar', async ({ page 
 test('the retreat countdown scales its bar by the retreat window, not the fuse', async ({ page }) => {
   await startMatch(page);
   await page.getByTestId('weapon-dynamite').click();
-  await page.getByTestId('btn-fire').click();
-  // Dynamite's fuse ends first, leaving an open retreat window with no fuse burning.
-  await page.waitForFunction(() => {
-    const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
-    return state.fuseLeft === null && state.retreatLeft > 0;
-  });
+  // Pause before firing: waiting for the retreat window and then clicking races
+  // its 3 s length, and a slow worker can miss the window entirely.
   await page.getByTestId('btn-pause').click();
 
+  // The paused loop still renders and pushes snapshots but stops calling update,
+  // so this drives the frozen engine to the explosion deterministically.
+  const retreatLeft = await page.evaluate(() => {
+    const engine = (
+      window as never as {
+        __WORMAGE__: {
+          engine: { fire: () => void; update: (dt: number) => void; snapshot: () => Snapshot };
+        };
+      }
+    ).__WORMAGE__.engine;
+    engine.fire();
+    for (let step = 0; step < 300; step += 1) {
+      const state = engine.snapshot();
+      if (state.fuseLeft === null && state.retreatLeft > 0) return state.retreatLeft;
+      engine.update(1 / 60);
+    }
+    throw new Error('the dynamite fuse never opened a retreat window');
+  });
+
+  const expected = (retreatLeft / RETREAT_SECONDS) * 100;
   await expect
     .poll(() =>
-      page.evaluate((retreatTotal) => {
-        const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
-        const bar = document.querySelector('[data-testid="hud-timer-fill"]') as HTMLElement;
-        return Math.abs(Number.parseFloat(bar.style.width) - (state.retreatLeft / retreatTotal) * 100);
-      }, RETREAT_SECONDS),
+      page
+        .getByTestId('hud-timer-fill')
+        .evaluate((el) => Number.parseFloat((el as HTMLElement).style.width)),
     )
-    .toBeLessThan(0.5);
+    .toBeCloseTo(expected, 1);
 });
 
 test('pausing cancels a charge instead of firing on release', async ({ page }) => {
