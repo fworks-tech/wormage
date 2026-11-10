@@ -23,19 +23,21 @@ test('the Jump button hops, then ignores a second press in the air', async ({ pa
 
   await page.getByTestId('btn-jump').click();
   await expect(page.getByTestId('btn-jump')).toBeDisabled();
-  await page.waitForFunction(() => {
-    const worm = (window as never as { __WORMAGE__: { engine: { activeWorm: WormState | null } } }).__WORMAGE__
-      .engine.activeWorm;
-    return Boolean(worm && worm.vy > 0);
+
+  // Dispatch J and compare the velocity in the same turn of the event loop:
+  // a real second jump would reset vy to -300.
+  const result = await page.evaluate(() => {
+    const engine = (window as never as { __WORMAGE__: { engine: { activeWorm: WormState | null } } }).__WORMAGE__
+      .engine;
+    const worm = engine.activeWorm;
+    const before = worm?.vy ?? 0;
+    const wasAirborne = Boolean(worm && !worm.onGround);
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ' }));
+    return { before, after: worm?.vy ?? 0, wasAirborne };
   });
 
-  const falling = await activeWorm(page);
-  await page.keyboard.press('j');
-
-  const after = await activeWorm(page);
-  expect(after!.onGround).toBe(false);
-  expect(after!.vy).toBeGreaterThan(0);
-  expect(after!.y).toBeGreaterThan(falling!.y - 2);
+  expect(result.wasAirborne).toBe(true);
+  expect(result.after).toBe(result.before);
 });
 
 test('holding a direction jumps the worm forward', async ({ page }) => {
