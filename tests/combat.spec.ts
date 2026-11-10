@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { WEAPONS } from '../src/game/config';
+import { RETREAT_SECONDS, WEAPONS } from '../src/game/config';
 
 type Snapshot = {
   phase: string;
@@ -116,6 +116,18 @@ test('pause freezes the turn timer until resumed', async ({ page }) => {
   expect((await snapshot(page)).timeLeft).toBeLessThan(frozen);
 });
 
+test('the HUD stays inside the letterboxed arena on wide screens', async ({ page }) => {
+  await page.setViewportSize({ width: 1900, height: 940 });
+  await startMatch(page);
+
+  const bar = (1900 - (940 * 16) / 9) / 2;
+  const left = await page.getByTestId('btn-left').boundingBox();
+  expect(left!.x).toBeGreaterThanOrEqual(bar - 1);
+
+  const pause = await page.getByTestId('btn-pause').boundingBox();
+  expect(pause!.x + pause!.width).toBeLessThanOrEqual(1900 - bar + 1);
+});
+
 test('the fuse countdown shows the real fuse and scales its bar', async ({ page }) => {
   await startMatch(page);
   await page.getByTestId('weapon-dynamite').click();
@@ -127,16 +139,37 @@ test('the fuse countdown shows the real fuse and scales its bar', async ({ page 
 
   // Pause freezes the fuse; the HUD gets one more push with the frozen value.
   await page.getByTestId('btn-pause').click();
-  await page.waitForTimeout(250);
 
   const fuse = (await snapshot(page)).fuseLeft!;
   const total = WEAPONS.dynamite.fuse!;
-  expect(await page.getByTestId('hud-timer').textContent()).toBe(fuse.toFixed(1));
+  await expect(page.getByTestId('hud-timer')).toHaveText(fuse.toFixed(1));
 
   const width = await page
     .getByTestId('hud-timer-fill')
     .evaluate((el) => Number.parseFloat((el as HTMLElement).style.width));
   expect(width).toBeCloseTo((fuse / total) * 100, 0);
+});
+
+test('the retreat countdown scales its bar by the retreat window, not the fuse', async ({ page }) => {
+  await startMatch(page);
+  await page.getByTestId('weapon-dynamite').click();
+  await page.getByTestId('btn-fire').click();
+  // Dynamite's fuse ends first, leaving an open retreat window with no fuse burning.
+  await page.waitForFunction(() => {
+    const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
+    return state.fuseLeft === null && state.retreatLeft > 0;
+  });
+  await page.getByTestId('btn-pause').click();
+
+  await expect
+    .poll(() =>
+      page.evaluate((retreatTotal) => {
+        const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
+        const bar = document.querySelector('[data-testid="hud-timer-fill"]') as HTMLElement;
+        return Math.abs(Number.parseFloat(bar.style.width) - (state.retreatLeft / retreatTotal) * 100);
+      }, RETREAT_SECONDS),
+    )
+    .toBeLessThan(0.5);
 });
 
 test('pausing cancels a charge instead of firing on release', async ({ page }) => {
