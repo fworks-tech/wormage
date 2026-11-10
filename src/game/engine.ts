@@ -253,10 +253,10 @@ export class GameEngine {
     this.phase = 'projectile';
     this.retreatTimer = RETREAT_SECONDS;
 
-    if (this.weapon === 'dynamite') {
+    if (weapon.kind === 'drop') {
       this.projectiles.push({
         id: (this.projectileId += 1),
-        weapon: 'dynamite',
+        weapon: this.weapon,
         teamId: team.id,
         x: worm.x,
         y: worm.y - 8,
