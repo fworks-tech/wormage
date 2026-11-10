@@ -82,6 +82,19 @@ function recordMatch(): GameEngine {
   return engine;
 }
 
+test('the dispatcher covers jump and end turn', () => {
+  const engine = new GameEngine(config());
+  const worm = engine.activeWorm;
+  expect(worm).not.toBeNull();
+
+  engine.applyAction({ type: 'jump' });
+  expect(worm!.vy).toBeLessThan(0);
+  expect(engine.events.some((event) => event.type === 'jump')).toBe(true);
+
+  engine.applyAction({ type: 'endTurn' });
+  expect(engine.activeTeam).toBe(1);
+});
+
 test('a recorded match replays to the same final snapshot', () => {
   const live = recordMatch();
 
@@ -101,6 +114,7 @@ test('a recorded match replays to the same final snapshot', () => {
     replay.update(DT);
   }
 
+  expect(cursor).toBe(live.log.length);
   expect(replay.tick).toBe(live.tick);
   expect(replay.snapshot()).toEqual(live.snapshot());
   expect(replay.winnerTeam).toBe(live.winnerTeam);
