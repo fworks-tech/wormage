@@ -30,6 +30,8 @@ Two static routes and no router dependency. `/demo` plays: New Game dialog → m
 
 `/demo` also owns fullscreen: the Start Game and Play Again clicks request it, since browsers only grant fullscreen from a user gesture. `/project` never asks, and the pause dialog restores it after a deliberate Esc. See [DECISIONS.md](DECISIONS.md) §16. `public/manifest.webmanifest` installs the origin as a home-screen app that launches `/demo`; the manifest is app-wide (`scope: "/"`), while the Fullscreen API request stays `/demo`-only.
 
+The New Game dialog mounts `MenuBackdrop`, a decorative scene built from the shared `paintSky` plus a generated `Terrain`/`TerrainPainter`. Two canvases crossfade a new island every 2 s (one static scene under reduced motion), and the dialog's existing `backdrop-filter` blurs it. It runs no engine, worms or HUD.
+
 ## 2. Frame loop and time
 
 ```ts

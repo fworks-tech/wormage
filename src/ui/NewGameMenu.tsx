@@ -1,3 +1,5 @@
+import { MenuBackdrop } from './MenuBackdrop';
+
 interface NewGameMenuProps {
   onStart: () => void;
 }
@@ -9,6 +11,7 @@ export function NewGameMenu({ onStart }: NewGameMenuProps) {
 
   return (
     <div className="menu-shell">
+      <MenuBackdrop />
       <div className="overlay" role="dialog" aria-modal="true" aria-label="New game">
         <div className="overlay-card">
           <p className="eyebrow">Turn-based artillery · 1v1 vs CPU</p>
