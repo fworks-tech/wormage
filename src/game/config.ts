@@ -19,10 +19,11 @@ export const WORM = {
   radius: 11,
   walkSpeed: 74,
   jumpVelocity: 300,
+  /** Horizontal carry of a front/back jump, in px/s. */
+  jumpPush: 180,
   maxHp: 100,
   fallSafePx: 150,
   fallDamagePerPx: 0.16,
-  maxJumpsPerTurn: 2,
 } as const;
 
 export const AIM = {

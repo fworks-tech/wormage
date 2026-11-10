@@ -34,6 +34,7 @@ Seeds: `/demo?seed=4242` fixes terrain generation and AI jitter so combat tests 
 | `unit/ai.test.ts` | reticle radius, AI weapon/firing-spot choice, left-facing aim, retreat and dynamite escape, preview and aim clamp |
 | `unit/mockServer.test.ts` | leaderboard pagination and ranking, ruleset filter, idempotent registration |
 | `unit/replay.test.ts` | a recorded action log (walk, grenade bounce, kill) replays to the same final snapshot; jump/end-turn dispatch |
+| `unit/jump.test.ts` | directional jumps, mid-air flips, unlimited jumps, jump during flight, AI jump when blocked |
 | `unit/parity.test.ts` | `simulateShot`/`previewFlight` read speed, gravity, wind, lifetime, fuse and bounce damping from `WEAPONS`/`BOUNCE` |
 | `menu.spec.ts` | root redirect, demo/project routes, menu, tabs, options validation/persistence, empty and error states, ruleset-scoped board |
 | `combat.spec.ts` | firing, turn handoff, walking (keyboard and pads), weapon selection, pause/freeze, retreat window, dynamite fuse, crater carving, end turn |

@@ -11,7 +11,7 @@ export type EndReason = 'time' | 'wipeout' | 'surrender';
 export type GameAction =
   | { type: 'move'; dir: -1 | 0 | 1 }
   | { type: 'aim'; delta: number }
-  | { type: 'jump' }
+  | { type: 'jump'; dir?: -1 | 0 | 1 }
   | { type: 'weapon'; id: WeaponId }
   | { type: 'startCharge' }
   | { type: 'releaseCharge' }
@@ -72,6 +72,8 @@ export interface Worm {
   x: number;
   y: number;
   vy: number;
+  /** Horizontal flight velocity; walking uses `moveDir` instead. */
+  vx: number;
   hp: number;
   maxHp: number;
   alive: boolean;
@@ -161,6 +163,8 @@ export interface GameSnapshot {
   aiThinking: boolean;
   /** Seconds left in the post-fire movement window. */
   retreatLeft: number;
+  /** Whether the active worm is standing on terrain (a second jump becomes a flip). */
+  activeOnGround: boolean;
   /** Shortest lit fuse among projectiles in flight, or null. */
   fuseLeft: number | null;
 }

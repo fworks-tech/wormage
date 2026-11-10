@@ -74,7 +74,7 @@ export class GameEngine {
   private aiPlan: AiTurnPlan | null = null;
   private aiStall = 0;
   private aiLastX = -1;
-  private jumpsLeft = WORM.maxJumpsPerTurn;
+  private aiJumpAttempts = 0;
   private projectileId = 0;
   private readonly rng: () => number;
   private readonly lastWormByTeam: Record<number, string> = {};
@@ -97,6 +97,7 @@ export class GameEngine {
           x,
           y,
           vy: 0,
+          vx: 0,
           hp: WORM.maxHp,
           maxHp: WORM.maxHp,
           alive: true,
@@ -164,13 +165,13 @@ export class GameEngine {
     this.weapon = 'bazooka';
     this.moveDir = 0;
     this.hasFired = false;
-    this.jumpsLeft = WORM.maxJumpsPerTurn;
     this.settleTimer = 0;
     this.retreatTimer = 0;
     this.aiTimer = 0.9;
     this.aiPlan = null;
     this.aiStall = 0;
     this.aiLastX = -1;
+    this.aiJumpAttempts = 0;
     this.aiThinking = team.isAi;
     const maxWind = WIND_ACCEL[this.config.wind];
     this.wind = first ? 0 : Math.round((this.rng() * 2 - 1) * maxWind);
@@ -217,7 +218,7 @@ export class GameEngine {
         this.aimBy(action.delta);
         break;
       case 'jump':
-        this.jump();
+        this.jump(action.dir);
         break;
       case 'weapon':
         this.selectWeapon(action.id);
@@ -269,16 +270,16 @@ export class GameEngine {
     this.weapon = id;
   }
 
-  jump(): void {
+  jump(dir: -1 | 0 | 1 = this.moveDir): void {
     const worm = this.activeWorm;
-    if (!worm || this.phase !== 'aim' || this.hasFired || this.jumpsLeft <= 0) return;
-    if (this.teams[this.activeTeam].isAi) return;
-    if (!worm.onGround) return;
+    if (!worm || this.phase === 'gameover') return;
+    // Airborne jumps are flips: reset the rise, keep momentum on a neutral flip.
+    if (worm.onGround || dir !== 0) worm.vx = dir * WORM.jumpPush;
     worm.vy = -WORM.jumpVelocity;
+    if (dir !== 0) worm.facing = dir;
     worm.onGround = false;
     worm.fallDistance = 0;
     worm.airborne = true;
-    this.jumpsLeft -= 1;
     this.events.push({ type: 'jump', x: worm.x, y: worm.y });
   }
 
@@ -414,10 +415,15 @@ export class GameEngine {
     if (!worm.alive) return;
     const isActive = worm.id === this.activeWormId;
     const canWalk =
-      isActive && (this.phase === 'aim' || this.retreatActive) && this.moveDir !== 0 && !this.charging;
+      isActive &&
+      worm.onGround &&
+      (this.phase === 'aim' || this.retreatActive) &&
+      this.moveDir !== 0 &&
+      !this.charging;
 
     if (canWalk) {
       const dir = this.moveDir;
+      worm.vx = 0;
       const nx = worldClamp(worm.x + dir * WORM.walkSpeed * dt, 12, 1268);
       const bodyBlocked = this.terrain.isSolid(nx, worm.y - 12);
       const ahead = this.terrain.groundY(nx, worm.y - 18, 42);
@@ -443,14 +449,24 @@ export class GameEngine {
     if (!worm.onGround) {
       worm.vy += GRAVITY * dt;
       const dy = worm.vy * dt;
-      const steps = Math.max(1, Math.ceil(Math.abs(dy) / 5));
+      const dx = worm.vx * dt;
+      const steps = Math.max(1, Math.ceil(Math.max(Math.abs(dy), Math.abs(dx)) / 5));
       for (let i = 0; i < steps; i += 1) {
+        if (worm.vx !== 0) {
+          const nextX = worldClamp(worm.x + dx / steps, 12, 1268);
+          if (nextX === 12 || nextX === 1268 || this.terrain.isSolid(nextX, worm.y - 12)) {
+            worm.vx = 0;
+          } else {
+            worm.x = nextX;
+          }
+        }
         const nextY = worm.y + dy / steps;
         const hit = this.terrain.isSolid(worm.x, nextY);
         if (hit) {
           const landing = this.terrain.groundY(worm.x, nextY - Math.abs(dy / steps) - 6, 18);
           worm.y = landing ?? Math.floor(nextY / 4) * 4;
           worm.vy = 0;
+          worm.vx = 0;
           worm.onGround = true;
           worm.airborne = false;
           this.applyFallDamage(worm);
@@ -458,6 +474,11 @@ export class GameEngine {
         }
         const stepDelta = dy / steps;
         worm.y = nextY;
+        // Unlimited flips must not carry the worm out of the top of the world.
+        if (worm.y < 0) {
+          worm.y = 0;
+          worm.vy = 0;
+        }
         if (stepDelta > 0) worm.fallDistance += stepDelta;
         if (worm.y > WATER_Y) {
           worm.y = WATER_Y;
@@ -473,6 +494,7 @@ export class GameEngine {
       if (ground === null) {
         worm.onGround = false;
         worm.vy = 0;
+        worm.vx = 0;
         worm.fallDistance = 0;
       } else {
         worm.y = ground;
@@ -666,9 +688,19 @@ export class GameEngine {
       else {
         this.aiStall = 0;
         this.aiLastX = worm.x;
+        this.aiJumpAttempts = 0;
       }
       // Blocked or out of turn time: take the best bazooka shot from here.
       if (this.aiStall < 1.5 && this.timeLeft > 0.5) return;
+
+      // Try a jump or two toward the target before giving up on the walk.
+      if (this.aiStall >= 1.5 && this.aiJumpAttempts < 2 && worm.onGround) {
+        this.aiJumpAttempts += 1;
+        this.jump(this.moveDir);
+        this.aiStall = 0;
+        this.aiLastX = worm.x;
+        return;
+      }
 
       this.moveDir = 0;
       const target = this.nearestEnemy(worm);
@@ -778,6 +810,7 @@ export class GameEngine {
       winnerTeam: this.winnerTeam,
       aiThinking: this.aiThinking,
       retreatLeft: this.retreatActive ? this.retreatTimer : 0,
+      activeOnGround: active?.onGround ?? true,
       fuseLeft: this.projectiles.reduce<number | null>((soonest, p) => {
         if (p.fuse === null) return soonest;
         const left = Math.max(0, p.fuse - p.age);
