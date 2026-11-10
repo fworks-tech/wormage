@@ -1,7 +1,7 @@
-import { expect, test } from '@playwright/test';
-import { aimPoint } from '../src/game/aim';
-import { chooseRetreat, clampAngle, planAiTurn, previewFlight, simulateShot } from '../src/game/ai';
-import { AIM, RETREAT_SECONDS, WEAPONS, WORM } from '../src/game/config';
+import { expect, test } from 'vitest';
+import { aimPoint } from '../../src/game/aim';
+import { chooseRetreat, clampAngle, planAiTurn, previewFlight, simulateShot } from '../../src/game/ai';
+import { AIM, RETREAT_SECONDS, WEAPONS, WORM } from '../../src/game/config';
 
 /** Flat ground at y = 500, or a wall from x = wallX. No canvas needed. */
 const terrain = (wallX = Infinity) => ({

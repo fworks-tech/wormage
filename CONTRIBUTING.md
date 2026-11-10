@@ -8,6 +8,7 @@ Automated agents should also read [AGENTS.md](AGENTS.md), which restates these r
 npm ci
 npm run dev            # http://localhost:5173
 npm run typecheck
+npm test               # Vitest unit tests
 npm run build
 npm run test:e2e       # uses installed Chrome
 ```
@@ -57,6 +58,7 @@ endTurn() allowed ending the turn while a projectile was in flight.
 
 - [ ] Linked issue (`Closes #N`)
 - [ ] `npm run typecheck` passes
+- [ ] `npm test` passes
 - [ ] `npm run build` passes
 - [ ] `npm run test:e2e` passes, or the PR explains why it does not apply
 - [ ] New behavior has a test that fails without the change

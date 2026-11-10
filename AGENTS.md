@@ -29,6 +29,7 @@ Node 20+. `npm run build` already runs `tsc --noEmit`.
 npm ci
 npm run dev            # http://localhost:5173, starts MSW
 npm run typecheck
+npm test               # Vitest, Node, no browser
 npm run build
 npm run build:single   # one self-contained HTML file (no service worker)
 npm run test:e2e       # Playwright, desktop + mobile
@@ -51,7 +52,7 @@ Playwright uses the installed Chrome (`channel: 'chrome'`); do not download brow
 | `src/game/renderer.ts` | Pixi scene, worms, particles, aim preview |
 | `src/ui/` | React screens and HUD; `GameView` owns the loop and input |
 | `src/state/`, `src/api/`, `src/mocks/` | persistence, HTTP client and queries, MSW fixtures |
-| `tests/` | Playwright specs and conventions (`tests/README.md`) |
+| `tests/` | Vitest unit tests (`tests/unit/`), Playwright specs and conventions (`tests/README.md`) |
 
 ## Invariants
 
@@ -77,6 +78,7 @@ Playwright uses the installed Chrome (`channel: 'chrome'`); do not download brow
 ## Definition of done
 
 - `npm run typecheck` passes.
+- `npm test` passes.
 - `npm run build` passes.
 - `npx playwright test` passes on desktop and mobile, or the PR explains why it does not apply.
 - New behavior has a test that fails without the change.
@@ -88,8 +90,8 @@ Playwright uses the installed Chrome (`channel: 'chrome'`); do not download brow
 - Assert on state, not pixels or animation timing. Read `window.__WORMAGE__.snapshot()` or `window.__WORMAGE__.engine`; drive real buttons, keys and pointers.
 - Wait with a predicate (`waitForFunction`) or a `data-testid`, never with fixed sleeps.
 - `/?seed=4242` fixes terrain and AI jitter for reproducible combat tests.
-- Pure logic (ballistics, scoring, helpers) can be tested in a plain Node module under `tests/`; no canvas needed.
-- Each spec runs twice, once per Playwright project (`desktop`, `mobile`).
+- Pure logic (ballistics, scoring, helpers) belongs in `tests/unit/` and runs under `npm test`; no canvas or Playwright.
+- Each Playwright spec runs twice, once per project (`desktop`, `mobile`).
 
 ## Style
 
@@ -101,5 +103,5 @@ Playwright uses the installed Chrome (`channel: 'chrome'`); do not download brow
 
 ## Current gaps (as of this file)
 
-- Vitest and deterministic replay are M1 work (#11–#14).
+- Deterministic replay is M1 work (#12).
 - Ranking and history still run on MSW fixtures; AWS arrives in M3 (#16).

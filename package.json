@@ -10,6 +10,7 @@
     "build": "tsc --noEmit && vite build",
     "build:single": "tsc --noEmit && vite build --mode single",
     "preview": "vite preview",
+    "test": "vitest run",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit"
   },
@@ -29,7 +30,8 @@
     "msw": "^2.7.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
-    "vite-plugin-singlefile": "^2.0.3"
+    "vite-plugin-singlefile": "^2.0.3",
+    "vitest": "^4.1.12"
   },
   "msw": {
     "workerDirectory": [

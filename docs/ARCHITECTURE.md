@@ -131,6 +131,7 @@ Match registration is idempotent on `clientMatchId`: a retry after a timeout ret
 
 ## 10. Testing strategy
 
+- Vitest runs browserless unit tests in `tests/unit/`: the engine in Node, ballistics/AI helpers and `mockServer` rules.
 - Playwright drives real clicks/keys and asserts engine state through `window.__WORMAGE__` (documented as instrumentation, not a gameplay shortcut).
 - Deterministic seeds are passed via `?seed=123` (ruleset snapshot) so terrain and AI jitter are reproducible.
 - Visual baselines are planned for M1; the suite currently asserts state, not pixels.
