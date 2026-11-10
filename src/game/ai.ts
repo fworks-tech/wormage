@@ -6,6 +6,7 @@ import {
   PROJECTILE_GRAVITY,
   RETREAT_SECONDS,
   WATER_Y,
+  WEAPON_ORDER,
   WEAPONS,
   WIND_ACCEL,
   WIND_FACTOR,
@@ -227,12 +228,13 @@ export function planAiTurn(input: AiTurnInput): AiTurnPlan | null {
 
   let best: (Candidate & { weapon: WeaponId; fireX: number }) | null = null;
 
-  for (const weapon of ['bazooka', 'grenade', 'shotgun', 'dynamite'] as WeaponId[]) {
-    if (WEAPONS[weapon].ammo !== null && ammo[weapon] <= 0) continue;
+  for (const weapon of WEAPON_ORDER) {
+    const def = WEAPONS[weapon];
+    if (def.ammo !== null && ammo[weapon] <= 0) continue;
     for (const pos of positions) {
       const candidate =
-        weapon === 'dynamite'
-          ? planDrop(terrain, pos, worm, worms, enemies)
+        def.kind === 'drop'
+          ? planDrop(terrain, weapon, pos, worm, worms, enemies)
           : planProjectile(terrain, weapon, pos, worm, worms, enemies, wind);
       if (!candidate) continue;
       // Prefer a short walk when two plans do the same damage.
@@ -243,8 +245,10 @@ export function planAiTurn(input: AiTurnInput): AiTurnPlan | null {
 
   if (!best) return null;
 
-  const jitterAngle = best.weapon === 'dynamite' ? 0 : (rng() * 2 - 1) * difficulty.angleError;
-  const jitterPower = best.weapon === 'dynamite' ? 0 : (rng() * 2 - 1) * difficulty.powerError;
+  // Drops are placed, not aimed: error jitter would move a shot that has no direction.
+  const isDrop = WEAPONS[best.weapon].kind === 'drop';
+  const jitterAngle = isDrop ? 0 : (rng() * 2 - 1) * difficulty.angleError;
+  const jitterPower = isDrop ? 0 : (rng() * 2 - 1) * difficulty.powerError;
 
   return {
     weapon: best.weapon,
@@ -317,18 +321,20 @@ function planProjectile(
 
 function planDrop(
   terrain: AiTerrain,
+  weapon: WeaponId,
   pos: { x: number; y: number },
   worm: AiWorm,
   worms: AiWorm[],
   enemies: AiWorm[],
 ): Candidate | null {
+  const def = WEAPONS[weapon];
   const blast = { x: pos.x, y: pos.y - 8 };
-  const safety = WEAPONS.dynamite.radius + WORM.radius + 6;
-  const retreatX = chooseRetreat(terrain, pos, enemies, blast, safety, WEAPONS.dynamite.fuse ?? RETREAT_SECONDS);
-  // Never plant dynamite without a way out of its own blast.
+  const safety = def.radius + WORM.radius + 6;
+  const retreatX = chooseRetreat(terrain, pos, enemies, blast, safety, def.fuse ?? RETREAT_SECONDS);
+  // Never plant a drop without a way out of its own blast.
   if (retreatX === null) return null;
   return {
-    score: damageScore(blast.x, blast.y, 'dynamite', worm, worms),
+    score: damageScore(blast.x, blast.y, weapon, worm, worms),
     angle: -0.5,
     power: 0.5,
     retreatX,
