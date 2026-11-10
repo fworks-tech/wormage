@@ -676,6 +676,11 @@ select {
 
 /* ------------------------------------------------------------------ game */
 
+/* The letterbox around the 16:9 world should match the arena, not the page. */
+html:fullscreen {
+  background: #08100f;
+}
+
 .game-shell {
   position: fixed;
   inset: 0;

@@ -11,6 +11,7 @@ React renders menus, dialogs and the in-match HUD. It never owns gameplay state.
 | `ResultScreen.tsx` | outcome, score, stats, registration status and retry |
 | `GameView.tsx` | mounts engine + Pixi renderer, owns the loop, input, pause rules |
 | `Hud.tsx` | team panels, timer, wind, weapons, power, touch/keyboard controls |
+| `fullscreen.ts` | demo-route guard, Fullscreen API request and `fullscreenchange` state |
 
 ## Conventions
 
