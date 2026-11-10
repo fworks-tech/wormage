@@ -23,20 +23,24 @@ test('the Jump button hops, then flips higher in the air', async ({ page }) => {
 
   await page.getByTestId('btn-jump').click();
   await expect(page.getByTestId('btn-jump')).toHaveText('Flip');
-  await page.waitForFunction(() => {
+  // Click the real button from inside the page: Playwright's actionability wait
+  // can outlive the fall on a slow runner, turning the Flip into a ground jump.
+  const falling = await page.waitForFunction<number | null>(() => {
     const worm = (window as never as { __WORMAGE__: { engine: { activeWorm: WormState | null } } }).__WORMAGE__
       .engine.activeWorm;
-    return Boolean(worm && worm.vy > 0);
+    if (!worm || worm.vy <= 0) return null;
+    const y = worm.y;
+    document.querySelector<HTMLButtonElement>('[data-testid="btn-jump"]')!.click();
+    return y;
   });
 
-  const falling = await activeWorm(page);
-  await page.getByTestId('btn-jump').click();
+  const fallingY = await falling.jsonValue();
   await expect
     .poll(async () => {
       const worm = await activeWorm(page);
       return worm ? worm.y : Number.POSITIVE_INFINITY;
     })
-    .toBeLessThan(falling!.y - 20);
+    .toBeLessThan(fallingY! - 20);
 });
 
 test('holding a direction jumps the worm forward', async ({ page }) => {
