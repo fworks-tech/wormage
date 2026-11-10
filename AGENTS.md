@@ -103,5 +103,4 @@ Playwright uses the installed Chrome (`channel: 'chrome'`); do not download brow
 
 ## Current gaps (as of this file)
 
-- Deterministic replay is M1 work (#12).
 - Ranking and history still run on MSW fixtures; AWS arrives in M3 (#16).

@@ -1,5 +1,16 @@
 export type WeaponId = 'bazooka' | 'grenade' | 'shotgun' | 'dynamite';
 export type Difficulty = 'rookie' | 'veteran' | 'elite';
+
+/** A serializable player input. AI decisions come from the engine's seeded RNG. */
+export type GameAction =
+  | { type: 'move'; dir: -1 | 0 | 1 }
+  | { type: 'aim'; delta: number }
+  | { type: 'jump' }
+  | { type: 'weapon'; id: WeaponId }
+  | { type: 'startCharge' }
+  | { type: 'releaseCharge' }
+  | { type: 'fire' }
+  | { type: 'endTurn' };
 export type WindSetting = 'off' | 'light' | 'strong';
 export type EndReason = 'time' | 'wipeout' | 'surrender';
 

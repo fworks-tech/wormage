@@ -20,6 +20,7 @@ import type { AiTurnPlan } from './ai';
 import { configKey } from './types';
 import type {
   EndReason,
+  GameAction,
   GameEvent,
   GameSnapshot,
   MatchConfig,
@@ -29,6 +30,12 @@ import type {
   WeaponId,
   Worm,
 } from './types';
+
+/** One recorded input, stamped with the tick it was applied before. */
+export interface ActionLogEntry {
+  tick: number;
+  action: GameAction;
+}
 
 const WORM_NAMES = [
   ['Sarge', 'Biscuit', 'Mags'],
@@ -46,6 +53,9 @@ export class GameEngine {
   readonly teams: Team[];
   phase: Phase = 'aim';
   turn = 1;
+  /** Fixed steps taken so far. Inputs are replayed against this counter. */
+  tick = 0;
+  readonly log: ActionLogEntry[] = [];
   activeTeam = 0;
   activeWormId: string | null = null;
   wind = 0;
@@ -194,6 +204,42 @@ export class GameEngine {
     if (!worm || this.phase !== 'aim') return;
     worm.aimAngle = clampAngle(worm.aimAngle + delta);
     worm.facing = Math.cos(worm.aimAngle) >= 0 ? 1 : -1;
+  }
+
+  /** Apply an input and keep it in the log for replay. */
+  record(action: GameAction): void {
+    this.log.push({ tick: this.tick, action });
+    this.applyAction(action);
+  }
+
+  /** Same path as `record`, without logging. A replay drives the engine through here. */
+  applyAction(action: GameAction): void {
+    switch (action.type) {
+      case 'move':
+        this.setMove(action.dir);
+        break;
+      case 'aim':
+        this.aimBy(action.delta);
+        break;
+      case 'jump':
+        this.jump();
+        break;
+      case 'weapon':
+        this.selectWeapon(action.id);
+        break;
+      case 'startCharge':
+        this.startCharge();
+        break;
+      case 'releaseCharge':
+        this.releaseCharge();
+        break;
+      case 'fire':
+        this.fire();
+        break;
+      case 'endTurn':
+        this.endTurn();
+        break;
+    }
   }
 
   setAimFromPoint(x: number, y: number): void {
@@ -663,6 +709,7 @@ export class GameEngine {
 
   update(dt: number): void {
     if (this.phase === 'gameover') return;
+    this.tick += 1;
     this.elapsed += dt;
 
     if (this.charging) {
