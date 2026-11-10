@@ -3,7 +3,7 @@ import { AIM, WATER_Y, WEAPONS, WORM, WORLD_H, WORLD_W, windLabel } from './conf
 import { aimPoint } from './aim';
 import type { GameEngine } from './engine';
 import type { GameEvent, GameSnapshot, WeaponId, Worm } from './types';
-import { simulateShot } from './ai';
+import { previewFlight } from './ai';
 
 const FONT_DISPLAY = 'Anton, Impact, sans-serif';
 const FONT_BODY = '"Space Grotesk", system-ui, sans-serif';
@@ -615,21 +615,10 @@ export class ArenaRenderer {
 
     if (weapon.kind === 'drop') return;
 
-    const steps = 16;
-    for (let i = 1; i <= steps; i += 1) {
-      const t = i / steps;
-      const sim = simulateShot(
-        this.engine.terrain,
-        muzzleX,
-        muzzleY,
-        angle,
-        power,
-        weapon.id,
-        this.engine.wind,
-        weapon.fuse !== null ? weapon.fuse * t : null,
-        weapon.bounces,
-      );
-      this.aim.circle(sim.x, sim.y, 1.6).fill({ color: 0xffe08a, alpha: 0.32 + t * 0.4 });
+    const preview = previewFlight(this.engine.terrain, muzzleX, muzzleY, angle, power, weapon.id, this.engine.wind);
+    for (const [index, point] of preview.entries()) {
+      const t = (index + 1) / preview.length;
+      this.aim.circle(point.x, point.y, 1.6).fill({ color: 0xffe08a, alpha: 0.32 + t * 0.4 });
     }
 
     // The aim bound: every reticle sits on or inside this circle.

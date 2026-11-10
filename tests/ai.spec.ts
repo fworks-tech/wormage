@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { aimPoint } from '../src/game/aim';
-import { chooseRetreat, clampAngle, planAiTurn, simulateShot } from '../src/game/ai';
+import { chooseRetreat, clampAngle, planAiTurn, previewFlight, simulateShot } from '../src/game/ai';
 import { AIM, RETREAT_SECONDS, WEAPONS, WORM } from '../src/game/config';
 
 /** Flat ground at y = 500, or a wall from x = wallX. No canvas needed. */
@@ -82,6 +82,29 @@ const walled = (...walls: Array<[number, number]>) => ({
 });
 
 const enemy = { id: 'b', teamId: 1, x: 440, y: 500 };
+
+test('the aim preview traces an arc for a fuse-less weapon', () => {
+  const points = previewFlight(terrain(), 400, 486, -0.6, 0.8, 'bazooka', 0);
+  expect(points.length).toBeGreaterThan(3);
+  expect(new Set(points.map((p) => `${p.x.toFixed(2)}:${p.y.toFixed(2)}`)).size).toBe(points.length);
+});
+
+test('a fused preview ends on the detonation point', () => {
+  const points = previewFlight(terrain(), 400, 486, -0.6, 0.8, 'grenade', 0);
+  const end = simulateShot(
+    terrain(),
+    400,
+    486,
+    -0.6,
+    0.8,
+    'grenade',
+    0,
+    WEAPONS.grenade.fuse,
+    WEAPONS.grenade.bounces,
+  );
+  const last = points.at(-1)!;
+  expect(Math.hypot(last.x - end.x, last.y - end.y)).toBeLessThan(3);
+});
 
 test('the aim clamp uses the configured limits', () => {
   expect(clampAngle(0)).toBe(AIM.max);
