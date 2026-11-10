@@ -20,6 +20,10 @@ const queryClient = new QueryClient({
  * adapter) must be decided before the first query fires.
  */
 async function boot(): Promise<void> {
+  // '/' goes straight to the playable demo; keep `?seed=` for reproducible tests.
+  if (window.location.pathname === '/') {
+    window.history.replaceState(null, '', `/demo${window.location.search}${window.location.hash}`);
+  }
   await initApiLayer();
   const container = document.getElementById('root');
   if (!container) throw new Error('Root element missing');

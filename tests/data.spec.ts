@@ -48,7 +48,7 @@ test('the result survives a refresh through the persisted last result', async ({
   });
   await expect(page.getByTestId('result-screen')).toBeVisible({ timeout: 10_000 });
 
-  await page.reload();
+  await page.goto('/project');
   await page.getByTestId('tab-briefing').click();
   await expect(page.locator('.last-run')).toBeVisible();
 });

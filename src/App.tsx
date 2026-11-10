@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { GameView } from './ui/GameView';
 import { MainMenu } from './ui/MainMenu';
+import { NewGameMenu } from './ui/NewGameMenu';
 import { ResultScreen } from './ui/ResultScreen';
 import { loadLastResult, loadPlayer, loadSettings, saveLastResult, saveSettings } from './state/storage';
 import { useRegisterMatch } from './api/queries';
@@ -62,17 +63,24 @@ export default function App() {
     saveSettings(next);
   }, []);
 
-  return (
-    <div className="app">
-      {screen === 'menu' && (
+  // Two static routes: /project is the informational page, everything else plays.
+  if (window.location.pathname.startsWith('/project')) {
+    return (
+      <div className="app">
         <MainMenu
           settings={settings}
           player={player}
           lastResult={result}
-          onStart={startMatch}
+          onStart={() => window.location.assign('/demo')}
           onSaveSettings={handleSaveSettings}
         />
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="app">
+      {screen === 'menu' && <NewGameMenu onStart={startMatch} />}
 
       {screen === 'game' && (
         <GameView
@@ -91,7 +99,7 @@ export default function App() {
           saveError={register.isError}
           onRetry={() => result && submitResult(result)}
           onPlayAgain={startMatch}
-          onMenu={() => setScreen('menu')}
+          onMenu={() => window.location.assign('/project')}
         />
       )}
     </div>

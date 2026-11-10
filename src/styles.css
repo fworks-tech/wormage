@@ -164,6 +164,11 @@ a {
   background: var(--amber-soft);
 }
 
+a.ghost-btn {
+  display: inline-block;
+  text-decoration: none;
+}
+
 .link-btn {
   border: 0;
   background: none;

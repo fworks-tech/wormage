@@ -14,8 +14,22 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+test('the root redirects to the demo and /project keeps the briefing', async ({ page }) => {
+  await page.goto('/?seed=4242');
+  await expect(page).toHaveURL(/\/demo\?seed=4242$/);
+  await expect(page.getByTestId('btn-play')).toHaveText('Start Game');
+
+  await page.getByTestId('btn-project').click();
+  await expect(page).toHaveURL(/\/project$/);
+  await expect(page.locator('h1.wordmark')).toContainText('WORMAGE');
+  await expect(page.getByTestId('tab-ranking')).toBeVisible();
+
+  await page.getByTestId('btn-play').click();
+  await expect(page).toHaveURL(/\/demo$/);
+});
+
 test('menu renders the briefing and both boards', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/project');
   await expect(page.locator('h1.wordmark')).toContainText('WORMAGE');
   await expect(page.getByTestId('demo-note')).toContainText('Demo build');
   await expect(page.getByTestId('btn-play')).toBeVisible();
@@ -29,7 +43,7 @@ test('menu renders the briefing and both boards', async ({ page }) => {
 });
 
 test('options persist after reload and clamp the timer', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/project');
   await page.getByTestId('tab-options').click();
 
   await page.getByTestId('select-wind').selectOption('strong');
@@ -49,7 +63,7 @@ test('options persist after reload and clamp the timer', async ({ page }) => {
 });
 
 test('empty and failing archive scenarios render recoverable states', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/project');
   await page.getByTestId('tab-options').click();
   await page.getByTestId('select-scenario').selectOption('empty');
   await page.getByTestId('tab-ranking').click();

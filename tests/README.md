@@ -22,13 +22,13 @@ window.__WORMAGE__.engine       // imperative engine (surrender, endTurn…)
 
 This hook exists only to make E2E deterministic; it is not used by the UI. Tests still drive real buttons, keys and pointer gestures for anything the user can do.
 
-Seeds: `/?seed=4242` fixes terrain generation and AI jitter so combat tests are reproducible.
+Seeds: `/demo?seed=4242` fixes terrain generation and AI jitter so combat tests are reproducible. `/?seed=4242` works too — the root redirect keeps the query string.
 
 ## Suites
 
 | File | Covers |
 | --- | --- |
-| `menu.spec.ts` | menu, tabs, options validation/persistence, empty and error states, ruleset-scoped board |
+| `menu.spec.ts` | root redirect, demo/project routes, menu, tabs, options validation/persistence, empty and error states, ruleset-scoped board |
 | `combat.spec.ts` | firing, turn handoff, walking and arena bounds, weapon selection, pause/freeze, retreat window, dynamite fuse, crater carving, end turn |
 | `ai.spec.ts` | pure-logic checks: reticle radius, AI weapon/firing-spot choice, left-facing aim, retreat and dynamite escape |
 | `data.spec.ts` | result screen, match registration, history/ranking visibility, persistence after refresh |
