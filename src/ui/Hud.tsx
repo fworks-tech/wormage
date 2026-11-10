@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { WEAPONS, WEAPON_ORDER, windLabel } from '../game/config';
+import { RETREAT_SECONDS, WEAPONS, WEAPON_ORDER, windLabel } from '../game/config';
 import type { GameSnapshot, WeaponId } from '../game/types';
 
 interface HudProps {
@@ -51,10 +51,15 @@ export function Hud({
   const ammo = myTeam?.ammo[snapshot.weapon] ?? 0;
   const timeRatio = snapshot.timeLeft / Math.max(1, snapshot.turnSeconds);
   const activeWorm = snapshot.teams[snapshot.activeTeam]?.worms.find((w) => w.active);
-  const fuseLeft = snapshot.fuseLeft === null ? null : Math.max(0, Math.ceil(snapshot.fuseLeft));
+  const fuseLeft = snapshot.fuseLeft === null ? null : Math.max(0, snapshot.fuseLeft);
   const inFlight = snapshot.phase !== 'aim';
-  const countdown = inFlight ? fuseLeft ?? Math.ceil(snapshot.retreatLeft) : Math.ceil(snapshot.timeLeft);
-  const countdownRatio = inFlight ? Math.min(1, (fuseLeft ?? snapshot.retreatLeft) / 3) : timeRatio;
+  const countdown = inFlight
+    ? fuseLeft !== null
+      ? fuseLeft.toFixed(1)
+      : String(Math.ceil(snapshot.retreatLeft))
+    : String(Math.ceil(snapshot.timeLeft));
+  const fuseTotal = WEAPONS[snapshot.weapon].fuse ?? RETREAT_SECONDS;
+  const countdownRatio = inFlight ? Math.min(1, (fuseLeft ?? snapshot.retreatLeft) / fuseTotal) : timeRatio;
   const phaseLabel = inFlight ? (fuseLeft !== null ? 'Fuse' : 'Retreat') : activeWorm?.name ?? '';
 
   useHoldRepeat(() => onAim(1), holdAimUp.current);
@@ -116,7 +121,11 @@ export function Hud({
             <span className="turn-worm">{phaseLabel}</span>
           </div>
           <div className="timer-bar">
-            <div className="timer-fill" style={{ width: `${Math.max(0, countdownRatio) * 100}%` }} />
+            <div
+              className="timer-fill"
+              data-testid="hud-timer-fill"
+              style={{ width: `${Math.max(0, countdownRatio) * 100}%` }}
+            />
           </div>
         </div>
 

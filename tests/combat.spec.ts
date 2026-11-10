@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { WEAPONS } from '../src/game/config';
 
 type Snapshot = {
   phase: string;
@@ -113,6 +114,29 @@ test('pause freezes the turn timer until resumed', async ({ page }) => {
   await page.getByTestId('btn-resume').click();
   await page.waitForTimeout(700);
   expect((await snapshot(page)).timeLeft).toBeLessThan(frozen);
+});
+
+test('the fuse countdown shows the real fuse and scales its bar', async ({ page }) => {
+  await startMatch(page);
+  await page.getByTestId('weapon-dynamite').click();
+  await page.getByTestId('btn-fire').click();
+  await page.waitForFunction(() => {
+    const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
+    return state.fuseLeft !== null && state.fuseLeft > 1.5 && state.fuseLeft < 1.85;
+  });
+
+  // Pause freezes the fuse; the HUD gets one more push with the frozen value.
+  await page.getByTestId('btn-pause').click();
+  await page.waitForTimeout(250);
+
+  const fuse = (await snapshot(page)).fuseLeft!;
+  const total = WEAPONS.dynamite.fuse!;
+  expect(await page.getByTestId('hud-timer').textContent()).toBe(fuse.toFixed(1));
+
+  const width = await page
+    .getByTestId('hud-timer-fill')
+    .evaluate((el) => Number.parseFloat((el as HTMLElement).style.width));
+  expect(width).toBeCloseTo((fuse / total) * 100, 0);
 });
 
 test('pausing cancels a charge instead of firing on release', async ({ page }) => {
