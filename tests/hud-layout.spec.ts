@@ -10,7 +10,12 @@ const startMatch = async (page: import('@playwright/test').Page) => {
 type Box = { x: number; y: number; width: number; height: number };
 
 const box = async (page: import('@playwright/test').Page, selector: string): Promise<Box> => {
-  const found = await page.locator(selector).first().boundingBox();
+  const found = await page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+  }, selector);
   if (!found) throw new Error(`no box for ${selector}`);
   return found;
 };
