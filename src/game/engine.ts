@@ -272,11 +272,14 @@ export class GameEngine {
 
   jump(dir: -1 | 0 | 1 = this.moveDir): void {
     const worm = this.activeWorm;
-    if (!worm || this.phase === 'gameover') return;
+    if (!worm || !worm.alive || this.phase === 'gameover') return;
     // Airborne jumps are flips: reset the rise, keep momentum on a neutral flip.
     if (worm.onGround || dir !== 0) worm.vx = dir * WORM.jumpPush;
     worm.vy = -WORM.jumpVelocity;
-    if (dir !== 0) worm.facing = dir;
+    if (dir !== 0 && worm.facing !== dir) {
+      worm.facing = dir;
+      worm.aimAngle = mirrorAngle(worm.aimAngle);
+    }
     worm.onGround = false;
     worm.fallDistance = 0;
     worm.airborne = true;
@@ -688,12 +691,11 @@ export class GameEngine {
       else {
         this.aiStall = 0;
         this.aiLastX = worm.x;
-        this.aiJumpAttempts = 0;
       }
       // Blocked or out of turn time: take the best bazooka shot from here.
       if (this.aiStall < 1.5 && this.timeLeft > 0.5) return;
 
-      // Try a jump or two toward the target before giving up on the walk.
+      // Two blocked-walk jumps per AI turn, then fall back to a shot so it can act.
       if (this.aiStall >= 1.5 && this.aiJumpAttempts < 2 && worm.onGround) {
         this.aiJumpAttempts += 1;
         this.jump(this.moveDir);

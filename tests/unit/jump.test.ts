@@ -98,6 +98,14 @@ describe('jump physics', () => {
     expect(worm.y).toBeGreaterThanOrEqual(0);
   });
 
+  test('a dead worm cannot jump', () => {
+    const { engine, worm } = flatEngine();
+    worm.alive = false;
+    engine.jump(0);
+
+    expect(engine.events.some((event) => event.type === 'jump')).toBe(false);
+  });
+
   test('a replay records the jump direction', () => {
     const { engine, worm } = flatEngine();
     engine.record({ type: 'jump', dir: -1 });
