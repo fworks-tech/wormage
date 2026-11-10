@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameEngine } from '../game/engine';
 import { ArenaRenderer } from '../game/renderer';
 import { SoundKit } from '../game/audio';
-import { AIM } from '../game/config';
+import { AIM, FIXED_DT } from '../game/config';
 import type { GameSettings, GameSnapshot, WeaponId } from '../game/types';
 import type { SessionResult } from '../types';
 import { Hud } from './Hud';
@@ -27,6 +27,7 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
   const snapshotRef = useRef<GameSnapshot | null>(null);
   const keysRef = useRef<Set<string>>(new Set());
   const lastUiPush = useRef(0);
+  const accumulator = useRef(0);
   const dragRef = useRef<{ active: boolean; moved: boolean; x: number; y: number }>({
     active: false,
     moved: false,
@@ -110,27 +111,34 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
     const tick = () => {
       const renderer = rendererRef.current;
       if (!renderer) return;
+      // Rendering keeps the real frame delta; the simulation only advances in
+      // fixed steps. The clamp caps catch-up after a stalled tab.
       const dt = Math.min(0.08, renderer.app.ticker.deltaMS / 1000);
       const isPaused = pausedRef.current;
 
       if (!isPaused) {
-        // The AI drives its own worm; player input only steers on human turns.
-        if (!engine.teams[engine.activeTeam].isAi) {
-          if (engine.phase === 'aim' || engine.retreatActive) {
-            if (keysRef.current.has('ArrowLeft') || keysRef.current.has('KeyA')) engine.setMove(-1);
-            else if (keysRef.current.has('ArrowRight') || keysRef.current.has('KeyD')) engine.setMove(1);
-            else engine.setMove(0);
+        accumulator.current += dt;
+        while (accumulator.current >= FIXED_DT) {
+          accumulator.current -= FIXED_DT;
 
-            if (engine.phase === 'aim') {
-              if (keysRef.current.has('ArrowUp') || keysRef.current.has('KeyW')) engine.aimBy(AIM.rate * dt);
-              if (keysRef.current.has('ArrowDown') || keysRef.current.has('KeyS')) engine.aimBy(-AIM.rate * dt);
+          // The AI drives its own worm; player input only steers on human turns.
+          if (!engine.teams[engine.activeTeam].isAi) {
+            if (engine.phase === 'aim' || engine.retreatActive) {
+              if (keysRef.current.has('ArrowLeft') || keysRef.current.has('KeyA')) engine.setMove(-1);
+              else if (keysRef.current.has('ArrowRight') || keysRef.current.has('KeyD')) engine.setMove(1);
+              else engine.setMove(0);
+
+              if (engine.phase === 'aim') {
+                if (keysRef.current.has('ArrowUp') || keysRef.current.has('KeyW')) engine.aimBy(AIM.rate * FIXED_DT);
+                if (keysRef.current.has('ArrowDown') || keysRef.current.has('KeyS')) engine.aimBy(-AIM.rate * FIXED_DT);
+              }
+            } else {
+              engine.setMove(0);
             }
-          } else {
-            engine.setMove(0);
           }
-        }
 
-        engine.update(dt);
+          engine.update(FIXED_DT);
+        }
 
         for (const event of engine.events.splice(0)) {
           renderer.handleEvent(event);

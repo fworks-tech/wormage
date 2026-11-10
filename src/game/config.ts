@@ -32,6 +32,9 @@ export const AIM = {
   radius: 130,
 } as const;
 
+/** Simulation step. Gameplay math advances only in these steps (ADR 0005). */
+export const FIXED_DT = 1 / 60;
+
 export const CHARGE_SECONDS = 1.1;
 
 /** Movement window after firing, before the turn passes. */
