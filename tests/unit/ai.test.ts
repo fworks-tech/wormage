@@ -2,13 +2,7 @@ import { expect, test } from 'vitest';
 import { aimPoint } from '../../src/game/aim';
 import { chooseRetreat, clampAngle, planAiTurn, previewFlight, simulateShot } from '../../src/game/ai';
 import { AIM, RETREAT_SECONDS, WEAPONS, WORM } from '../../src/game/config';
-
-/** Flat ground at y = 500, or a wall from x = wallX. No canvas needed. */
-const terrain = (wallX = Infinity) => ({
-  isSolid: (x: number, y: number) => y >= 500 || x >= wallX,
-  groundY: (_x: number, fromY: number, maxDown = 260) =>
-    fromY <= 500 && fromY + maxDown >= 500 ? 500 : null,
-});
+import { terrain } from './terrainFixture';
 
 test('reticle sits on the fixed-radius circle in open air', () => {
   const point = aimPoint(terrain(), 400, 500, -0.5);
