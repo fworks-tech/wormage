@@ -3,6 +3,7 @@ import { GameView } from './ui/GameView';
 import { MainMenu } from './ui/MainMenu';
 import { NewGameMenu } from './ui/NewGameMenu';
 import { ResultScreen } from './ui/ResultScreen';
+import { enterDemoFullscreen } from './ui/fullscreen';
 import { loadLastResult, loadPlayer, loadSettings, saveLastResult, saveSettings } from './state/storage';
 import { useRegisterMatch } from './api/queries';
 import type { GameSettings } from './game/types';
@@ -23,6 +24,8 @@ export default function App() {
   const register = useRegisterMatch();
 
   const startMatch = useCallback(() => {
+    // Start and Play Again are the user gesture the Fullscreen API requires.
+    void enterDemoFullscreen();
     clientMatchId.current = newClientId();
     register.reset();
     setMatchKey((key) => key + 1);

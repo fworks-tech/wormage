@@ -6,6 +6,7 @@ import { AIM, FIXED_DT } from '../game/config';
 import type { GameSettings, GameSnapshot, WeaponId } from '../game/types';
 import type { SessionResult } from '../types';
 import { Hud } from './Hud';
+import { enterDemoFullscreen, useFullscreen } from './fullscreen';
 
 /** Screen-space slop so finger jitter on a tap is not treated as a shot. */
 const DRAG_SLOP_PX = 8;
@@ -44,6 +45,7 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
   const [paused, setPaused] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fullscreen = useFullscreen();
 
   // `?seed=123` makes terrain and AI jitter reproducible for E2E runs.
   const seedRef = useRef(
@@ -253,6 +255,9 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
     const down = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      // Esc belongs to the browser while fullscreen; pausing on the same key would
+      // resume the match the user just left.
+      if (e.code === 'Escape' && document.fullscreenElement) return;
       if (e.code === 'Escape' || e.code === 'KeyP') {
         e.preventDefault();
         setPause(!pausedRef.current);
@@ -439,6 +444,16 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
               <button type="button" className="primary-btn" onClick={() => setPause(false)} data-testid="btn-resume">
                 Resume
               </button>
+              {fullscreen.supported && !fullscreen.active && (
+                <button
+                  type="button"
+                  className="ghost-btn"
+                  onClick={() => void enterDemoFullscreen()}
+                  data-testid="btn-fullscreen"
+                >
+                  Fullscreen
+                </button>
+              )}
               <button type="button" className="ghost-btn" onClick={onExit}>
                 Quit to menu
               </button>

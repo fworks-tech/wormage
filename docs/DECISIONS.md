@@ -107,3 +107,10 @@ Persisted state is small and synchronous: settings, player identity, last result
 
 **Why:** a CPU that fires from wherever it spawned makes weapon choice meaningless and cannot use short-fuse weapons without killing itself.
 **Cost:** one planning pass costs a few milliseconds when the AI turn starts; the search is bounded by the walk budget and does not pathfind around walls (the engine stops at an obstruction and falls back to a bazooka shot).
+
+## 16. Fullscreen is entered on a gesture, never forced
+
+`/demo` requests document fullscreen from the Start Game and Play Again clicks, because browsers reject `requestFullscreen` without a transient user activation. Leaving fullscreen with Esc is respected: the pause dialog offers a `Fullscreen` button instead of auto-requesting on every later click. `/project` never asks, and browsers without the API (iPhone Safari) keep the viewport-filling layout.
+
+**Why:** the browser chrome is the only part of the presentation the page cannot remove, and starting a match is the first reliable gesture. An automatic re-entry loop would trap keyboard users who press Esc.
+**Cost:** a player who lands on `/demo` and never starts a match stays windowed, and after a deliberate exit fullscreen returns only through the pause dialog or a new match.

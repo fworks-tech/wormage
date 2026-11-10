@@ -36,7 +36,9 @@ Seeds: `/demo?seed=4242` fixes terrain generation and AI jitter so combat tests 
 | `unit/replay.test.ts` | a recorded action log (walk, grenade bounce, kill) replays to the same final snapshot; jump/end-turn dispatch |
 | `unit/jump.test.ts` | directional jumps, mid-air flips, unlimited jumps, jump during flight, AI jump when blocked |
 | `unit/parity.test.ts` | `simulateShot`/`previewFlight` read speed, gravity, wind, lifetime, fuse and bounce damping from `WEAPONS`/`BOUNCE` |
+| `unit/fullscreen.test.ts` | `/project` is excluded, unsupported/already-fullscreen/no-DOM no-ops, a refused request resolves false |
 | `menu.spec.ts` | root redirect, demo/project routes, menu, tabs, options validation/persistence, empty and error states, ruleset-scoped board |
+| `fullscreen.spec.ts` | fullscreen after Start and Play Again, a deliberate exit plus pause-dialog re-entry, `/project` stays windowed |
 | `combat.spec.ts` | firing, turn handoff, walking (keyboard and pads), weapon selection, pause/freeze, retreat window, dynamite fuse, crater carving, end turn |
 | `mobile-hud.spec.ts` | touch firing: tap/slop, deliberate drag, pointer cancel, pointer ownership, charge percentage |
 | `hud-layout.spec.ts` | 360/390/412 portrait and 915 landscape: target sizes, overlaps, Jump, compact landscape HUD |
