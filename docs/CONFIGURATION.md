@@ -22,6 +22,7 @@ Every gameplay number lives in `src/game/config.ts`. Balance changes should neve
 | `WORM.walkSpeed` | 74 | px/s | unaffected by wind |
 | `WORM.jumpVelocity` | 300 | px/s | jump start only from the ground; one jump per landing |
 | `WORM.jumpPush` | 180 | px/s | horizontal carry of a jump, and the air-steer speed while holding a direction |
+| `JUMP_REACH` | ≈58 | px | peak jump height, derived from `jumpVelocity` and `GRAVITY`; the AI will not plan a climb above it |
 | `AI.jumpWindowSeconds` | 6 | s | a blocked AI walk may keep jumping before it shoots from where it stands |
 | `WORM.maxHp` | 100 | HP | per worm |
 | `WORM.fallSafePx` | 150 | px | free fall before damage |

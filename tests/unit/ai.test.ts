@@ -1,7 +1,14 @@
 import { expect, test } from 'vitest';
 import { aimPoint } from '../../src/game/aim';
-import { chooseRetreat, clampAngle, planAiTurn, previewFlight, simulateShot } from '../../src/game/ai';
-import { AIM, RETREAT_SECONDS, WEAPONS, WORM } from '../../src/game/config';
+import {
+  chooseRetreat,
+  clampAngle,
+  firingPositions,
+  planAiTurn,
+  previewFlight,
+  simulateShot,
+} from '../../src/game/ai';
+import { AIM, JUMP_REACH, RETREAT_SECONDS, WEAPONS, WORM } from '../../src/game/config';
 import { terrain } from './terrainFixture';
 
 test('reticle sits on the fixed-radius circle in open air', () => {
@@ -51,6 +58,25 @@ const plan = (wormX: number, enemyX: number) => {
     rng: () => 0.5,
   });
 };
+
+test('AI firing positions never require more than one jump', () => {
+  // A 80 px step: too high to jump (the jump apex is about 58 px), but inside
+  // the old 90 px window.
+  const ledge = {
+    isSolid: (x: number, y: number) => y >= (x >= 460 ? 420 : 500),
+    groundY: (x: number, fromY: number, maxDown = 260) => {
+      const top = x >= 460 ? 420 : 500;
+      const start = Math.max(top, Math.ceil(fromY / 4) * 4);
+      return start <= fromY + maxDown ? start : null;
+    },
+  };
+  const positions = firingPositions(ledge, { id: 'a', teamId: 0, x: 400, y: 500 }, 400);
+
+  expect(positions.length).toBeGreaterThan(0);
+  for (const position of positions) {
+    expect(500 - position.y).toBeLessThanOrEqual(JUMP_REACH);
+  }
+});
 
 const impactOf = (turn: NonNullable<ReturnType<typeof plan>>, targetX: number) => {
   const def = WEAPONS[turn.weapon];
