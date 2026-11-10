@@ -7,6 +7,9 @@ import type { GameSettings, GameSnapshot, WeaponId } from '../game/types';
 import type { SessionResult } from '../types';
 import { Hud } from './Hud';
 
+/** Screen-space slop so finger jitter on a tap is not treated as a shot. */
+const DRAG_SLOP_PX = 8;
+
 interface GameViewProps {
   settings: GameSettings;
   onFinish: (result: SessionResult) => void;
@@ -26,13 +29,15 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
   const finishedRef = useRef(false);
   const snapshotRef = useRef<GameSnapshot | null>(null);
   const keysRef = useRef<Set<string>>(new Set());
+  // HUD pointer input lives outside the keyboard set; the fixed-step loop reads it.
+  const hudMoveRef = useRef<-1 | 0 | 1>(0);
   const lastUiPush = useRef(0);
   const accumulator = useRef(0);
-  const dragRef = useRef<{ active: boolean; moved: boolean; x: number; y: number }>({
+  const dragRef = useRef<{ active: boolean; moved: boolean; startX: number; startY: number }>({
     active: false,
     moved: false,
-    x: 0,
-    y: 0,
+    startX: 0,
+    startY: 0,
   });
 
   const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null);
@@ -57,6 +62,7 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
       // A release under the pause card must not fire the held shot.
       if (value) engineRef.current.cancelCharge();
     }
+    hudMoveRef.current = 0;
   }, []);
 
   useEffect(() => {
@@ -124,7 +130,9 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
           // The AI drives its own worm; player input only steers on human turns.
           if (!engine.teams[engine.activeTeam].isAi) {
             if (engine.phase === 'aim' || engine.retreatActive) {
-              if (keysRef.current.has('ArrowLeft') || keysRef.current.has('KeyA')) engine.setMove(-1);
+              const hudDir = hudMoveRef.current;
+              if (hudDir !== 0) engine.setMove(hudDir);
+              else if (keysRef.current.has('ArrowLeft') || keysRef.current.has('KeyA')) engine.setMove(-1);
               else if (keysRef.current.has('ArrowRight') || keysRef.current.has('KeyD')) engine.setMove(1);
               else engine.setMove(0);
 
@@ -133,6 +141,7 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
                 if (keysRef.current.has('ArrowDown') || keysRef.current.has('KeyS')) engine.aimBy(-AIM.rate * FIXED_DT);
               }
             } else {
+              hudMoveRef.current = 0;
               engine.setMove(0);
             }
           }
@@ -321,17 +330,20 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
       if (snap.phase !== 'aim' || snap.activeTeam !== 0) return;
       const point = localPoint(e);
       engine.setAimFromPoint(point.x, point.y);
-      dragRef.current = { active: true, moved: false, x: point.x, y: point.y };
+      dragRef.current = { active: true, moved: false, startX: e.clientX, startY: e.clientY };
       canvas.setPointerCapture(e.pointerId);
     };
 
     const onMove = (e: PointerEvent) => {
       const engine = engineRef.current;
-      if (!engine || !dragRef.current.active) return;
+      const drag = dragRef.current;
+      if (!engine || !drag.active) return;
       const point = localPoint(e);
       const worm = engine.activeWorm;
       if (!worm) return;
-      dragRef.current.moved = true;
+      if (!drag.moved && Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) >= DRAG_SLOP_PX) {
+        drag.moved = true;
+      }
       engine.setAimFromPoint(point.x, point.y);
       if (!engine.charging) {
         const distance = Math.hypot(point.x - worm.x, point.y - (worm.y - 14));
@@ -342,22 +354,29 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
     const onUp = () => {
       const engine = engineRef.current;
       const wasActive = dragRef.current.active;
-      dragRef.current.active = false;
-      if (!engine || !wasActive) return;
-      if (dragRef.current.moved) engine.fire();
+      const moved = dragRef.current.moved;
+      dragRef.current = { active: false, moved: false, startX: 0, startY: 0 };
+      if (!engine || !wasActive || !moved) return;
+      // The other thumb may be holding FIRE; its release owns the shot.
+      if (engine.charging) return;
+      engine.fire();
+    };
+
+    const onCancel = () => {
+      dragRef.current = { active: false, moved: false, startX: 0, startY: 0 };
     };
 
     canvas.addEventListener('pointerdown', onDown);
     canvas.addEventListener('pointermove', onMove);
     canvas.addEventListener('pointerup', onUp);
-    canvas.addEventListener('pointercancel', onUp);
+    canvas.addEventListener('pointercancel', onCancel);
     const noMenu = (e: Event) => e.preventDefault();
     canvas.addEventListener('contextmenu', noMenu);
     return () => {
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointermove', onMove);
       canvas.removeEventListener('pointerup', onUp);
-      canvas.removeEventListener('pointercancel', onUp);
+      canvas.removeEventListener('pointercancel', onCancel);
       canvas.removeEventListener('contextmenu', noMenu);
     };
   }, [ready]);
@@ -387,12 +406,16 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
         <Hud
           snapshot={snapshot}
           paused={paused}
-          onMove={(dir) => engineRef.current?.setMove(dir)}
+          onMove={(dir) => {
+            hudMoveRef.current = dir;
+            engineRef.current?.setMove(dir);
+          }}
           onAim={(dir) => engineRef.current?.aimBy(dir * 0.06)}
           onAimStop={() => undefined}
           onJump={() => engineRef.current?.jump()}
           onChargeStart={() => engineRef.current?.startCharge()}
           onChargeEnd={() => engineRef.current?.releaseCharge()}
+          onChargeCancel={() => engineRef.current?.cancelCharge()}
           onSelectWeapon={(weapon) => engineRef.current?.selectWeapon(weapon)}
           onEndTurn={() => engineRef.current?.endTurn()}
           onPause={() => setPause(true)}

@@ -11,6 +11,7 @@ interface HudProps {
   onJump: () => void;
   onChargeStart: () => void;
   onChargeEnd: () => void;
+  onChargeCancel: () => void;
   onSelectWeapon: (weapon: WeaponId) => void;
   onEndTurn: () => void;
   onPause: () => void;
@@ -35,13 +36,14 @@ export function Hud({
   onJump,
   onChargeStart,
   onChargeEnd,
+  onChargeCancel,
   onSelectWeapon,
   onEndTurn,
   onPause,
 }: HudProps) {
   const holdAimUp = useRef(false);
   const holdAimDown = useRef(false);
-  const fireHeld = useRef(false);
+  const firePointer = useRef<number | null>(null);
 
   const playerTurn = snapshot.activeTeam === 0 && snapshot.phase === 'aim' && !paused;
   const canSteer = snapshot.activeTeam === 0 && !paused && (snapshot.phase === 'aim' || snapshot.retreatLeft > 0);
@@ -72,17 +74,6 @@ export function Hud({
     onMove(0);
     onAimStop();
   };
-
-  useEffect(() => {
-    const release = () => {
-      if (fireHeld.current) {
-        fireHeld.current = false;
-        onChargeEnd();
-      }
-    };
-    window.addEventListener('pointerup', release);
-    return () => window.removeEventListener('pointerup', release);
-  }, [onChargeEnd]);
 
   return (
     <div className="hud">
@@ -292,23 +283,25 @@ export function Hud({
             className="fire-btn"
             data-testid="btn-fire"
             disabled={!playerTurn}
-            onPointerDown={() => {
-              fireHeld.current = true;
+            onPointerDown={(e) => {
+              if (firePointer.current !== null) return;
+              firePointer.current = e.pointerId;
+              e.currentTarget.setPointerCapture(e.pointerId);
               onChargeStart();
             }}
-            onPointerUp={() => {
-              if (!fireHeld.current) return;
-              fireHeld.current = false;
+            onPointerUp={(e) => {
+              if (firePointer.current !== e.pointerId) return;
+              firePointer.current = null;
               onChargeEnd();
             }}
-            onPointerLeave={() => {
-              if (!fireHeld.current) return;
-              fireHeld.current = false;
-              onChargeEnd();
+            onPointerCancel={(e) => {
+              if (firePointer.current !== e.pointerId) return;
+              firePointer.current = null;
+              onChargeCancel();
             }}
           >
             FIRE
-            <small>hold</small>
+            <small>{snapshot.charging ? `${Math.round(snapshot.power * 100)}%` : 'hold'}</small>
           </button>
           <button
             type="button"

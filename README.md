@@ -52,8 +52,8 @@ npm run test:e2e       # Playwright (uses installed Chrome)
 | Action | Keyboard | Touch |
 | --- | --- | --- |
 | Walk | `A` / `D` or arrows | ◀ ▶ pads |
-| Aim | `W` / `S` | ▲ ▼ pads or drag |
-| Fire | `Space` (hold to charge) | hold **Fire**, or drag and release |
+| Aim | `W` / `S` | ▲ ▼ pads, or tap/drag the field |
+| Fire | `Space` (hold to charge) | hold **Fire**, or drag 8 px+ and release |
 | Jump | `J` | Jump |
 | Switch weapon | `1`–`4` | weapon dock |
 | End turn | `E` | End turn |

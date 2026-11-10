@@ -1,0 +1,131 @@
+import { expect, test } from '@playwright/test';
+
+const startMatch = async (page: import('@playwright/test').Page) => {
+  await page.goto('/demo?seed=4242');
+  await page.getByTestId('btn-play').click();
+  await expect(page.getByTestId('arena').locator('canvas')).toBeVisible();
+  await page.waitForFunction(() => Boolean((window as never as { __WORMAGE__?: unknown }).__WORMAGE__));
+};
+
+type Box = { x: number; y: number; width: number; height: number };
+
+const box = async (page: import('@playwright/test').Page, selector: string): Promise<Box> => {
+  const found = await page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+  }, selector);
+  if (!found) throw new Error(`no box for ${selector}`);
+  return found;
+};
+
+const overlaps = (a: Box, b: Box) =>
+  a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+
+const expectTarget = (boxValue: Box, label: string) => {
+  expect(boxValue.width, `${label} width`).toBeGreaterThanOrEqual(44);
+  expect(boxValue.height, `${label} height`).toBeGreaterThanOrEqual(44);
+};
+
+const checkViewport = async (page: import('@playwright/test').Page, viewport: { width: number; height: number }) => {
+  await startMatch(page);
+
+  const jump = page.getByTestId('btn-jump');
+  await expect(jump).toBeVisible();
+  expectTarget(await box(page, '[aria-label="Aim up"]'), 'aim up');
+  expectTarget(await box(page, '[aria-label="Aim down"]'), 'aim down');
+  expectTarget(await box(page, '[data-testid="btn-end-turn"]'), 'end turn');
+  expectTarget(await box(page, '[data-testid="btn-pause"]'), 'pause');
+  expectTarget(await box(page, '[data-testid="btn-jump"]'), 'jump');
+  expectTarget(await box(page, '[data-testid="weapon-bazooka"]'), 'weapon');
+  expectTarget(await box(page, '[data-testid="btn-fire"]'), 'fire');
+
+  await expect(page.locator('.power-wrap')).toBeHidden();
+  await expect(page.getByTestId('btn-fire')).toContainText('hold');
+
+  const top = [
+    '[data-testid="team-panel-0"]',
+    '[data-testid="team-panel-1"]',
+    '[data-testid="hud-wind"]',
+    '[data-testid="btn-pause"]',
+    '.turn-block',
+  ];
+  const topBoxes = await Promise.all(top.map((selector) => box(page, selector)));
+  for (let i = 0; i < topBoxes.length; i += 1) {
+    for (let j = i + 1; j < topBoxes.length; j += 1) {
+      expect(overlaps(topBoxes[i], topBoxes[j]), `${top[i]} overlaps ${top[j]}`).toBe(false);
+    }
+  }
+
+  const bottom = '.hud-bottom';
+  const bottomBox = await box(page, bottom);
+  expect(bottomBox.y + bottomBox.height, 'bottom HUD inside viewport').toBeLessThanOrEqual(viewport.height);
+
+  const controls = [
+    '[data-testid="btn-left"]',
+    '[aria-label="Aim up"]',
+    '[aria-label="Aim down"]',
+    '[data-testid="btn-right"]',
+    '[data-testid="btn-jump"]',
+    '[data-testid="btn-fire"]',
+    '[data-testid="btn-end-turn"]',
+  ];
+  const controlBoxes = await Promise.all(controls.map((selector) => box(page, selector)));
+  for (let i = 0; i < controlBoxes.length; i += 1) {
+    for (let j = i + 1; j < controlBoxes.length; j += 1) {
+      expect(overlaps(controlBoxes[i], controlBoxes[j]), `${controls[i]} overlaps ${controls[j]}`).toBe(false);
+    }
+  }
+
+  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(scrollWidth).toBeLessThanOrEqual(viewport.width);
+
+  return { bottomBox };
+};
+
+test.describe('HUD layout 412x839', () => {
+  test.use({ viewport: { width: 412, height: 839 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2.625 });
+
+  test('portrait 412', async ({ page }) => {
+    const { bottomBox } = await checkViewport(page, { width: 412, height: 839 });
+    expect(bottomBox.height).toBeLessThanOrEqual(170);
+  });
+});
+
+test.describe('HUD layout 390x664', () => {
+  test.use({ viewport: { width: 390, height: 664 }, isMobile: true, hasTouch: true, deviceScaleFactor: 3 });
+
+  test('portrait 390', async ({ page }) => {
+    const { bottomBox } = await checkViewport(page, { width: 390, height: 664 });
+    expect(bottomBox.height).toBeLessThanOrEqual(170);
+  });
+});
+
+test.describe('HUD layout 360x640', () => {
+  test.use({ viewport: { width: 360, height: 640 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+
+  test('portrait 360', async ({ page }) => {
+    const { bottomBox } = await checkViewport(page, { width: 360, height: 640 });
+    expect(bottomBox.height).toBeLessThanOrEqual(170);
+  });
+});
+
+test.describe('HUD layout 915x412 landscape', () => {
+  test.use({ viewport: { width: 915, height: 412 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2.625 });
+
+  test('landscape 915', async ({ page }) => {
+    const { bottomBox } = await checkViewport(page, { width: 915, height: 412 });
+    expect(bottomBox.height).toBeLessThanOrEqual(105);
+
+    const cards = await page.locator('.weapon-card').evaluateAll((els) =>
+      els.map((el) => {
+        const rect = el.getBoundingClientRect();
+        return { x: +rect.x.toFixed(1), y: +rect.y.toFixed(1), w: +rect.width.toFixed(1), h: +rect.height.toFixed(1) };
+      }),
+    );
+    expect(new Set(cards.map((card) => card.y)).size, 'weapon cards in one row').toBe(1);
+    expect(Math.max(...cards.map((card) => card.h))).toBeGreaterThanOrEqual(44);
+    expect((await box(page, '.weapon-dock')).height).toBeLessThanOrEqual(52);
+  });
+});

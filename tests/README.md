@@ -36,7 +36,9 @@ Seeds: `/demo?seed=4242` fixes terrain generation and AI jitter so combat tests 
 | `unit/replay.test.ts` | a recorded action log (walk, grenade bounce, kill) replays to the same final snapshot; jump/end-turn dispatch |
 | `unit/parity.test.ts` | `simulateShot`/`previewFlight` read speed, gravity, wind, lifetime, fuse and bounce damping from `WEAPONS`/`BOUNCE` |
 | `menu.spec.ts` | root redirect, demo/project routes, menu, tabs, options validation/persistence, empty and error states, ruleset-scoped board |
-| `combat.spec.ts` | firing, turn handoff, walking and arena bounds, weapon selection, pause/freeze, retreat window, dynamite fuse, crater carving, end turn |
+| `combat.spec.ts` | firing, turn handoff, walking (keyboard and pads), weapon selection, pause/freeze, retreat window, dynamite fuse, crater carving, end turn |
+| `mobile-hud.spec.ts` | touch firing: tap/slop, deliberate drag, pointer cancel, pointer ownership, charge percentage |
+| `hud-layout.spec.ts` | 360/390/412 portrait and 915 landscape: target sizes, overlaps, Jump, compact landscape HUD |
 | `data.spec.ts` | result screen, match registration, history/ranking visibility, persistence after refresh |
 
 Each Playwright spec runs twice, once per project (`desktop` / `mobile`). There are no visual baselines yet; the suite asserts engine state through the instrumentation hook instead. Visual baselines are planned for M1.
@@ -48,3 +50,4 @@ Each Playwright spec runs twice, once per project (`desktop` / `mobile`). There 
 - Prefer `data-testid` selectors owned by the UI, not CSS structure.
 - Never assert on animation timing; wait for a state predicate (`waitForFunction`) or a test id.
 - Failures keep traces and screenshots in `test-results/`.
+- Touch specs use `Input.dispatchTouchEvent` over CDP; the describe sets `isMobile`/`hasTouch` so the same spec runs on both projects.

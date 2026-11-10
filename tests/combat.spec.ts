@@ -103,6 +103,44 @@ test('walking changes the worm x position and respects the arena edge', async ({
   expect(edge.teams[0].worms.find((w) => w.alive)!.x).toBeGreaterThanOrEqual(12);
 });
 
+test('the on-screen walk buttons move the active worm', async ({ page }) => {
+  await startMatch(page);
+  const before = await activeX(page);
+  expect(before).not.toBeNull();
+
+  const pad = await page.getByTestId('btn-right').boundingBox();
+  await page.mouse.move(pad!.x + pad!.width / 2, pad!.y + pad!.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(500);
+  await page.mouse.up();
+
+  const after = await activeX(page);
+  expect(after!).toBeGreaterThan(before!);
+
+  // Releasing the pad must stop the worm, not leave it walking.
+  await page.waitForTimeout(250);
+  expect(await activeX(page)).toBeCloseTo(after!, 1);
+});
+
+test('the on-screen walk buttons move the worm during retreat', async ({ page }) => {
+  await startMatch(page);
+  await page.getByTestId('btn-fire').click();
+  await page.waitForFunction(() => {
+    const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
+    return state.retreatLeft > 0;
+  });
+
+  const before = await activeX(page);
+  const pad = await page.getByTestId('btn-left').boundingBox();
+  await page.mouse.move(pad!.x + pad!.width / 2, pad!.y + pad!.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(400);
+  await page.mouse.up();
+
+  const after = await activeX(page);
+  expect(after!).toBeLessThan(before!);
+});
+
 test('weapon selection follows ammo and keyboard shortcuts', async ({ page }) => {
   await startMatch(page);
   await page.getByTestId('weapon-dynamite').click();
