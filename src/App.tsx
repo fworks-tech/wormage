@@ -4,9 +4,18 @@ import { MainMenu } from './ui/MainMenu';
 import { NewGameMenu } from './ui/NewGameMenu';
 import { ResultScreen } from './ui/ResultScreen';
 import { enterDemoFullscreen } from './ui/fullscreen';
-import { loadLastResult, loadPlayer, loadSettings, saveLastResult, saveSettings } from './state/storage';
+import {
+  loadBindings,
+  loadLastResult,
+  loadPlayer,
+  loadSettings,
+  saveBindings,
+  saveLastResult,
+  saveSettings,
+} from './state/storage';
 import { useRegisterMatch } from './api/queries';
 import type { GameSettings } from './game/types';
+import type { Bindings } from './state/bindings';
 import type { Screen, SessionResult } from './types';
 
 function newClientId(): string {
@@ -16,6 +25,7 @@ function newClientId(): string {
 
 export default function App() {
   const [settings, setSettings] = useState<GameSettings>(() => loadSettings());
+  const [bindings, setBindings] = useState<Bindings>(() => loadBindings());
   const [player] = useState(() => loadPlayer());
   const [screen, setScreen] = useState<Screen>('menu');
   const [matchKey, setMatchKey] = useState(0);
@@ -66,6 +76,11 @@ export default function App() {
     saveSettings(next);
   }, []);
 
+  const handleSaveBindings = useCallback((next: Bindings) => {
+    setBindings(next);
+    saveBindings(next);
+  }, []);
+
   // Two static routes: /project is the informational page, everything else plays.
   if (window.location.pathname.startsWith('/project')) {
     return (
@@ -83,12 +98,23 @@ export default function App() {
 
   return (
     <div className="app">
-      {screen === 'menu' && <NewGameMenu onStart={startMatch} />}
+      {screen === 'menu' && (
+        <NewGameMenu
+          onStart={startMatch}
+          settings={settings}
+          onSaveSettings={handleSaveSettings}
+          bindings={bindings}
+          onSaveBindings={handleSaveBindings}
+        />
+      )}
 
       {screen === 'game' && (
         <GameView
           key={matchKey}
           settings={settings}
+          bindings={bindings}
+          onSaveSettings={handleSaveSettings}
+          onSaveBindings={handleSaveBindings}
           onFinish={handleFinish}
           onExit={() => setScreen('menu')}
         />

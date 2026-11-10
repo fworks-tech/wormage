@@ -114,7 +114,9 @@ Because the solver and the game share one integrator, the CPU never "cheats" —
 - UI pushes at most every 100 ms.
 - Buttons call engine methods; no state is copied into React for writing.
 - The HUD is a pure function of `snapshot`.
-- The HUD is pointer-aware: a fine pointer hides the touch pad, Jump, pause, power, FIRE and End Turn (`Space`/drag fires, `E` ends the turn, `P`/`Esc` pauses) and lists the bindings in the pause dialog; a coarse pointer keeps the full on-screen HUD.
+- The HUD is pointer-aware: a fine pointer hides the touch pad, Jump, pause, power, FIRE and End Turn (`Space`/drag fires, `E` ends the turn, `P`/`Esc` pauses); a coarse pointer keeps the full on-screen HUD.
+- Key bindings are data: `src/state/bindings.ts` owns the defaults, labels, sanitize and swap; `src/state/storage.ts` persists them. `GameView` reads the saved map, while Escape stays a fixed pause/close key.
+- The New Game card and the pause card both open the same `SettingsDialog` and `ControlsDialog`. Settings freeze into a match at mount; bindings apply immediately.
 - Weapon cards use inline SVG art (`WeaponIcon.tsx`) instead of text glyphs, so the deck stays sharp at every DPR without an asset pipeline.
 - Accessibility: the arena is a labelled `role="img"`, a polite live region announces the active team/worm and remaining seconds (not every frame), all controls are real buttons with labels, and the pause dialog traps attention with `aria-modal`.
 
@@ -134,6 +136,7 @@ Match registration is idempotent on `clientMatchId`: a retry after a timeout ret
 `src/state/storage.ts` wraps localStorage with safe fallbacks (private mode, opaque iframe):
 
 - settings (turn timer, wind, difficulty, sound) — validated and clamped on read;
+- key bindings (action → `KeyboardEvent.code`) — merged over the defaults and sanitized on read;
 - player identity (id + display name);
 - last completed result, restored after refresh;
 - mock database + demo network scenario.

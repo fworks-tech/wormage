@@ -4,15 +4,23 @@ import { ArenaRenderer } from '../game/renderer';
 import { SoundKit } from '../game/audio';
 import { AIM, FIXED_DT } from '../game/config';
 import type { GameSettings, GameSnapshot, WeaponId } from '../game/types';
+import type { Bindings } from '../state/bindings';
 import type { SessionResult } from '../types';
+import { ControlsDialog } from './ControlsDialog';
 import { Hud } from './Hud';
+import { SettingsDialog } from './SettingsDialog';
 import { enterDemoFullscreen, useFullscreen } from './fullscreen';
 
 /** Screen-space slop so finger jitter on a tap is not treated as a shot. */
 const DRAG_SLOP_PX = 8;
 
+type PausePanel = 'settings' | 'controls' | null;
+
 interface GameViewProps {
   settings: GameSettings;
+  bindings: Bindings;
+  onSaveSettings: (settings: GameSettings) => void;
+  onSaveBindings: (bindings: Bindings) => void;
   onFinish: (result: SessionResult) => void;
   onExit: () => void;
 }
@@ -21,7 +29,14 @@ interface GameViewProps {
  * Owns the match: simulation, renderer, input and pause rules live here.
  * React only sees throttled snapshots (~10 Hz), never a render per frame.
  */
-export function GameView({ settings, onFinish, onExit }: GameViewProps) {
+export function GameView({
+  settings,
+  bindings,
+  onSaveSettings,
+  onSaveBindings,
+  onFinish,
+  onExit,
+}: GameViewProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
   const rendererRef = useRef<ArenaRenderer | null>(null);
@@ -30,6 +45,8 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
   const finishedRef = useRef(false);
   const snapshotRef = useRef<GameSnapshot | null>(null);
   const keysRef = useRef<Set<string>>(new Set());
+  const bindingsRef = useRef(bindings);
+  bindingsRef.current = bindings;
   // HUD pointer input lives outside the keyboard set; the fixed-step loop reads it.
   const hudMoveRef = useRef<-1 | 0 | 1>(0);
   const lastUiPush = useRef(0);
@@ -43,6 +60,7 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
 
   const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null);
   const [paused, setPaused] = useState(false);
+  const [pausePanel, setPausePanel] = useState<PausePanel>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fullscreen = useFullscreen();
@@ -59,6 +77,7 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
     if (finishedRef.current) return;
     pausedRef.current = value;
     setPaused(value);
+    setPausePanel(null);
     if (engineRef.current) {
       engineRef.current.moveDir = 0;
       engineRef.current.reelDir = 0;
@@ -133,25 +152,26 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
         accumulator.current += dt;
         while (accumulator.current >= FIXED_DT) {
           accumulator.current -= FIXED_DT;
+          const keymap = bindingsRef.current;
 
           // The AI drives its own worm; player input only steers on human turns.
           if (!engine.teams[engine.activeTeam].isAi) {
             if (engine.phase === 'aim' || engine.retreatActive) {
               const hudDir = hudMoveRef.current;
               if (hudDir !== 0) engine.setMove(hudDir);
-              else if (keysRef.current.has('ArrowLeft') || keysRef.current.has('KeyA')) engine.setMove(-1);
-              else if (keysRef.current.has('ArrowRight') || keysRef.current.has('KeyD')) engine.setMove(1);
+              else if (keysRef.current.has(keymap.left)) engine.setMove(-1);
+              else if (keysRef.current.has(keymap.right)) engine.setMove(1);
               else engine.setMove(0);
 
               if (engine.activeWorm?.rope) {
-                if (keysRef.current.has('ArrowUp') || keysRef.current.has('KeyW')) engine.setReel(-1);
-                else if (keysRef.current.has('ArrowDown') || keysRef.current.has('KeyS')) engine.setReel(1);
+                if (keysRef.current.has(keymap.aimUp)) engine.setReel(-1);
+                else if (keysRef.current.has(keymap.aimDown)) engine.setReel(1);
                 else engine.setReel(0);
               } else {
                 engine.setReel(0);
                 if (engine.phase === 'aim') {
-                  if (keysRef.current.has('ArrowUp') || keysRef.current.has('KeyW')) engine.aimBy(AIM.rate * FIXED_DT);
-                  if (keysRef.current.has('ArrowDown') || keysRef.current.has('KeyS')) engine.aimBy(-AIM.rate * FIXED_DT);
+                  if (keysRef.current.has(keymap.aimUp)) engine.aimBy(AIM.rate * FIXED_DT);
+                  if (keysRef.current.has(keymap.aimDown)) engine.aimBy(-AIM.rate * FIXED_DT);
                 }
               }
             } else {
@@ -263,11 +283,23 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      // A dialog button owns its own Space/Enter activation; do not also resume.
+      if (target?.closest('.overlay') && (target.tagName === 'BUTTON' || target.tagName === 'A')) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const keys = bindingsRef.current;
       // Esc belongs to the browser while fullscreen; pausing on the same key would
       // resume the match the user just left.
       if (e.code === 'Escape' && document.fullscreenElement) return;
-      if (e.code === 'Escape' || e.code === 'KeyP') {
+      if (e.code === 'Escape' || e.code === keys.pause) {
         e.preventDefault();
         setPause(!pausedRef.current);
         return;
@@ -283,53 +315,42 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
       const snap = snapshotRef.current;
       if (!engine || !snap || finishedRef.current) return;
 
-      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'].includes(e.code)) e.preventDefault();
+      if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
 
-      switch (e.code) {
-        case 'ArrowLeft':
-        case 'KeyA':
-        case 'ArrowRight':
-        case 'KeyD':
-        case 'ArrowUp':
-        case 'KeyW':
-        case 'ArrowDown':
-        case 'KeyS':
-          keysRef.current.add(e.code);
-          break;
-        case 'Space':
-          keysRef.current.add(e.code);
-          if (!e.repeat && snap.activeTeam === 0) engine.startCharge();
-          break;
-        case 'KeyJ':
-          if (!e.repeat && snap.activeTeam === 0) engine.jump();
-          break;
-        case 'KeyR':
-          if (!e.repeat && snap.activeTeam === 0) engine.useRope();
-          break;
-        case 'Digit1':
-        case 'Digit2':
-        case 'Digit3':
-        case 'Digit4': {
-          const map: Record<string, WeaponId> = {
-            Digit1: 'bazooka',
-            Digit2: 'grenade',
-            Digit3: 'shotgun',
-            Digit4: 'dynamite',
-          };
-          engine.selectWeapon(map[e.code]);
-          break;
-        }
-        case 'KeyE':
-          if (snap.activeTeam === 0) engine.endTurn();
-          break;
-        default:
-          break;
+      if ([keys.left, keys.right, keys.aimUp, keys.aimDown].includes(e.code)) {
+        keysRef.current.add(e.code);
+        return;
       }
+      if (e.code === keys.fire) {
+        keysRef.current.add(e.code);
+        if (!e.repeat && snap.activeTeam === 0) engine.startCharge();
+        return;
+      }
+      if (e.code === keys.jump) {
+        if (!e.repeat && snap.activeTeam === 0) engine.jump();
+        return;
+      }
+      if (e.code === keys.rope) {
+        if (!e.repeat && snap.activeTeam === 0) engine.useRope();
+        return;
+      }
+      const weaponByKey: Record<string, WeaponId> = {
+        [keys.weapon1]: 'bazooka',
+        [keys.weapon2]: 'grenade',
+        [keys.weapon3]: 'shotgun',
+        [keys.weapon4]: 'dynamite',
+      };
+      const weapon = weaponByKey[e.code];
+      if (weapon) {
+        engine.selectWeapon(weapon);
+        return;
+      }
+      if (e.code === keys.endTurn && snap.activeTeam === 0) engine.endTurn();
     };
 
     const up = (e: KeyboardEvent) => {
       keysRef.current.delete(e.code);
-      if (e.code === 'Space' && engineRef.current) engineRef.current.releaseCharge();
+      if (e.code === bindingsRef.current.fire && engineRef.current) engineRef.current.releaseCharge();
     };
 
     window.addEventListener('keydown', down);
@@ -449,39 +470,57 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
       )}
 
       {paused && (
-        <div className="overlay pause-overlay" role="dialog" aria-modal="true" aria-label="Game paused">
-          <div className="overlay-card">
-            <p className="eyebrow">Truce</p>
-            <h2>Paused</h2>
-            <p className="muted">The clock, wind and fuses are frozen until you resume.</p>
-            <div className="pause-help">
-              <p className="pause-help-keyboard">
-                <kbd>A</kbd>
-                <kbd>D</kbd> walk · <kbd>W</kbd>
-                <kbd>S</kbd> aim · <kbd>Space</kbd> fire · <kbd>J</kbd> jump · <kbd>R</kbd> rope · <kbd>1–4</kbd>{' '}
-                weapons · <kbd>E</kbd> end turn · <kbd>P</kbd> pause
-              </p>
-              <p className="pause-help-touch">Drag from the worm to aim; release to fire. Hold FIRE to charge.</p>
-            </div>
-            <div className="overlay-actions">
-              <button type="button" className="primary-btn" onClick={() => setPause(false)} data-testid="btn-resume">
-                Resume
-              </button>
-              {fullscreen.supported && !fullscreen.active && (
+        <div
+          className="overlay pause-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label={pausePanel === 'settings' ? 'Settings' : pausePanel === 'controls' ? 'Controls' : 'Game paused'}
+        >
+          {pausePanel === 'settings' ? (
+            <SettingsDialog settings={settings} onSave={onSaveSettings} onClose={() => setPausePanel(null)} />
+          ) : pausePanel === 'controls' ? (
+            <ControlsDialog bindings={bindings} onSave={onSaveBindings} onClose={() => setPausePanel(null)} />
+          ) : (
+            <div className="overlay-card">
+              <p className="eyebrow">Truce</p>
+              <h2>Paused</h2>
+              <p className="muted">The clock, wind and fuses are frozen until you resume.</p>
+              <div className="overlay-actions">
+                <button type="button" className="primary-btn" onClick={() => setPause(false)} data-testid="btn-resume">
+                  Resume
+                </button>
                 <button
                   type="button"
                   className="ghost-btn"
-                  onClick={() => void enterDemoFullscreen()}
-                  data-testid="btn-fullscreen"
+                  data-testid="btn-settings"
+                  onClick={() => setPausePanel('settings')}
                 >
-                  Fullscreen
+                  Settings
                 </button>
-              )}
-              <button type="button" className="ghost-btn" onClick={onExit}>
-                Quit to menu
-              </button>
+                <button
+                  type="button"
+                  className="ghost-btn"
+                  data-testid="btn-controls"
+                  onClick={() => setPausePanel('controls')}
+                >
+                  Controls
+                </button>
+                {fullscreen.supported && !fullscreen.active && (
+                  <button
+                    type="button"
+                    className="ghost-btn"
+                    onClick={() => void enterDemoFullscreen()}
+                    data-testid="btn-fullscreen"
+                  >
+                    Fullscreen
+                  </button>
+                )}
+                <button type="button" className="ghost-btn" onClick={onExit}>
+                  Quit to menu
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 

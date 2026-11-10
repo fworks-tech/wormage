@@ -88,9 +88,16 @@ Damage falloff: `max(0.22, 1 - distance / (radius + 11))`. A worm on the edge st
 ## Settings lifecycle
 
 1. `loadSettings()` reads localStorage, passes it through `sanitizeSettings()`, and clamps invalid values.
-2. The menu edits a draft; **Save options** persists and updates React state.
+2. The /project Options panel and the /demo Settings dialog edit drafts; saving persists and updates React state.
 3. Starting a match freezes those values into `MatchConfig` (plus a seed). Later edits apply to the next match only.
 4. `configKey` = `` `${turnSeconds}s-${wind}-${difficulty}` `` travels with every match record so the leaderboard only compares like with like.
+
+## Controls lifecycle
+
+1. `loadBindings()` reads localStorage and merges it over `DEFAULT_BINDINGS` through `sanitizeBindings()`.
+2. The Controls dialog (New Game card and pause card) edits a draft. Capturing a key already in use swaps the two actions; **Reset** restores the defaults.
+3. Saving persists the map and updates App state; `GameView` reads it immediately. `Escape` always pauses/closes and cannot be rebound.
+4. Storage key: `wormage.bindings.v1`.
 
 ## Demo network scenarios
 
