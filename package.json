@@ -31,7 +31,7 @@
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
     "vite-plugin-singlefile": "^2.0.3",
-    "vitest": "^3.2.7"
+    "vitest": "^4.1.12"
   },
   "msw": {
     "workerDirectory": [
