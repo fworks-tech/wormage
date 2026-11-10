@@ -110,7 +110,21 @@ Persisted state is small and synchronous: settings, player identity, last result
 
 ## 16. Fullscreen is entered on a gesture, never forced
 
-`/demo` requests document fullscreen from the Start Game and Play Again clicks, because browsers reject `requestFullscreen` without a transient user activation. Leaving fullscreen with Esc is respected: the pause dialog offers a `Fullscreen` button instead of auto-requesting on every later click. `/project` never asks, and browsers without the API (iPhone Safari) keep the viewport-filling layout.
+`/demo` requests document fullscreen from the Start Game and Play Again clicks, because browsers reject `requestFullscreen` without a transient user activation. Leaving fullscreen with Esc is respected: the pause dialog offers a `Fullscreen` button instead of auto-requesting on every later click. `/project` never asks. Browsers without the API (iPhone Safari in a tab) keep the viewport-filling layout; installing to the home screen is the only chrome-free path there (§17). A request on load stays out: the API requires a gesture, and on `/demo` no earlier gesture exists than Start Game. A fullscreen session on a touch device also locks landscape (§18).
 
 **Why:** the browser chrome is the only part of the presentation the page cannot remove, and starting a match is the first reliable gesture. An automatic re-entry loop would trap keyboard users who press Esc.
 **Cost:** a player who lands on `/demo` and never starts a match stays windowed, and after a deliberate exit fullscreen returns only through the pause dialog or a new match.
+
+## 17. A home-screen manifest, not a service worker
+
+`public/manifest.webmanifest` names the app, pins `start_url` to `/demo` with scope `/`, declares `display: standalone` and carries the 192/512 icons; `index.html` also adds the favicon, Apple touch icon and Apple web-app metas. Installing from iOS Safari (Share → Add to Home Screen) therefore launches the demo without Safari's chrome. `display: fullscreen` is deliberately not used: iOS ignores it and falls back to standalone, while a desktop install would start borderless outside the match.
+
+**Why:** an iPhone tab cannot fullscreen an element at all, and a Home Screen web app is the only chrome-free path there. iOS 26 makes every Home Screen site a web app by default; the manifest still supplies the name, icon and launch URL on older iOS and Android.
+**Cost:** Android Chrome needs a service worker to mint a WebAPK, so without one Add to Home screen only creates a browser shortcut. The offline shell, real install prompt and cross-device profile stay in M6 (#20), and true fullscreen on iOS remains impossible.
+
+## 18. Landscape only while the match is fullscreen
+
+After a successful fullscreen request on `/demo`, the page asks for a landscape orientation lock on coarse-pointer devices. Leaving fullscreen releases it. Every refusal is swallowed: Safari has no Screen Orientation API and desktop Chrome always rejects the call. Windowed portrait play is unchanged.
+
+**Why:** fullscreen is the immersive presentation, and the HUD already has a dedicated landscape-phone layout (`max-height: 480px`). The portrait layout from #59 stays available by leaving fullscreen.
+**Cost:** on Android a fullscreen match rotates even if the player prefers portrait; the way out is exiting fullscreen. iOS players rotate manually, because Safari ignores the lock.

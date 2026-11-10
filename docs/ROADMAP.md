@@ -49,7 +49,7 @@ Authored missions, bosses, XP, levels and unlocks on the content schema from ADR
 
 ### M6 — Multiplatform
 
-PWA install, offline shell and touch parity, with an optional Capacitor wrapper and cloud save if store discovery or a platform API becomes a measured blocker.
+PWA install, offline shell and touch parity, with an optional Capacitor wrapper and cloud save if store discovery or a platform API becomes a measured blocker. The home-screen manifest and icons already exist (DECISIONS §17); the service worker, Android WebAPK install, offline shell and cross-device profile are what remain.
 
 ## Working agreement
 
