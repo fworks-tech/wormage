@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 type Snapshot = { turn: number; phase: string };
 
@@ -8,17 +8,61 @@ const fullscreenTag = (page: import('@playwright/test').Page) =>
 const snapshot = (page: import('@playwright/test').Page) =>
   page.evaluate(() => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot());
 
-const startMatch = async (page: import('@playwright/test').Page) => {
+const startMatch = async (page: Page) => {
   await page.goto('/demo?seed=4242');
   await page.getByTestId('btn-play').click();
   await expect(page.getByTestId('arena').locator('canvas')).toBeVisible();
 };
+
+/** Records orientation requests; the real API cannot rotate a headless viewport. */
+const stubOrientation = (page: Page) =>
+  page.addInitScript(() => {
+    const calls: string[] = [];
+    (window as unknown as { __orientation: string[] }).__orientation = calls;
+    const prototype = (window as unknown as { ScreenOrientation?: { prototype: object } }).ScreenOrientation
+      ?.prototype;
+    if (!prototype) return;
+    Object.defineProperty(prototype, 'lock', {
+      configurable: true,
+      value: (orientation: string) => {
+        calls.push(`lock:${orientation}`);
+        return Promise.resolve();
+      },
+    });
+    Object.defineProperty(prototype, 'unlock', {
+      configurable: true,
+      value: () => {
+        calls.push('unlock');
+      },
+    });
+  });
+
+const orientationCalls = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __orientation: string[] }).__orientation);
 
 test('starting a match puts the demo in fullscreen without pausing it', async ({ page }) => {
   await startMatch(page);
   await expect.poll(() => fullscreenTag(page)).toBe('HTML');
   await expect(page.getByTestId('btn-resume')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollHeight > innerHeight)).toBe(false);
+});
+
+test('a touch match locks landscape only while fullscreen', async ({ page }, testInfo) => {
+  await stubOrientation(page);
+  await startMatch(page);
+
+  if (testInfo.project.name === 'mobile') {
+    await expect.poll(() => orientationCalls(page)).toContain('lock:landscape');
+  } else {
+    expect(await orientationCalls(page)).not.toContain('lock:landscape');
+  }
+
+  await page.evaluate(() => document.exitFullscreen());
+  await expect.poll(() => fullscreenTag(page)).toBeNull();
+
+  if (testInfo.project.name === 'mobile') {
+    await expect.poll(() => orientationCalls(page)).toContain('unlock');
+  }
 });
 
 test('exiting fullscreen is respected and the pause dialog restores it', async ({ page }) => {
