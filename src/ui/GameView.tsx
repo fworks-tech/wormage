@@ -26,6 +26,8 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
   const finishedRef = useRef(false);
   const snapshotRef = useRef<GameSnapshot | null>(null);
   const keysRef = useRef<Set<string>>(new Set());
+  // HUD pointer input lives outside the keyboard set; the fixed-step loop reads it.
+  const hudMoveRef = useRef<-1 | 0 | 1>(0);
   const lastUiPush = useRef(0);
   const accumulator = useRef(0);
   const dragRef = useRef<{ active: boolean; moved: boolean; x: number; y: number }>({
@@ -57,6 +59,7 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
       // A release under the pause card must not fire the held shot.
       if (value) engineRef.current.cancelCharge();
     }
+    hudMoveRef.current = 0;
   }, []);
 
   useEffect(() => {
@@ -124,7 +127,9 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
           // The AI drives its own worm; player input only steers on human turns.
           if (!engine.teams[engine.activeTeam].isAi) {
             if (engine.phase === 'aim' || engine.retreatActive) {
-              if (keysRef.current.has('ArrowLeft') || keysRef.current.has('KeyA')) engine.setMove(-1);
+              const hudDir = hudMoveRef.current;
+              if (hudDir !== 0) engine.setMove(hudDir);
+              else if (keysRef.current.has('ArrowLeft') || keysRef.current.has('KeyA')) engine.setMove(-1);
               else if (keysRef.current.has('ArrowRight') || keysRef.current.has('KeyD')) engine.setMove(1);
               else engine.setMove(0);
 
@@ -133,6 +138,7 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
                 if (keysRef.current.has('ArrowDown') || keysRef.current.has('KeyS')) engine.aimBy(-AIM.rate * FIXED_DT);
               }
             } else {
+              hudMoveRef.current = 0;
               engine.setMove(0);
             }
           }
@@ -387,7 +393,10 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
         <Hud
           snapshot={snapshot}
           paused={paused}
-          onMove={(dir) => engineRef.current?.setMove(dir)}
+          onMove={(dir) => {
+            hudMoveRef.current = dir;
+            engineRef.current?.setMove(dir);
+          }}
           onAim={(dir) => engineRef.current?.aimBy(dir * 0.06)}
           onAimStop={() => undefined}
           onJump={() => engineRef.current?.jump()}
