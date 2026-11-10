@@ -28,7 +28,7 @@ Wormage is a single-page React app wrapped around a self-contained PixiJS game. 
 
 Two static routes and no router dependency. `/demo` plays: New Game dialog → match → result. `/project` is the informational menu (briefing, ranking, history, options). `boot()` in `main.tsx` replaces `/` with `/demo`, keeping `?seed=`; `App.tsx` treats any path starting with `/project` as the project page and everything else as the demo. Vercel's existing rewrite serves `index.html` for both. Navigations are real page loads, which is fine for a static SPA; the single-file build only works from `/` and hides the project link.
 
-`/demo` also owns fullscreen: the Start Game and Play Again clicks request it, since browsers only grant fullscreen from a user gesture. `/project` never asks, and the pause dialog restores it after a deliberate Esc. See [DECISIONS.md](DECISIONS.md) §16.
+`/demo` also owns fullscreen: the Start Game and Play Again clicks request it, since browsers only grant fullscreen from a user gesture. `/project` never asks, and the pause dialog restores it after a deliberate Esc. See [DECISIONS.md](DECISIONS.md) §16. `public/manifest.webmanifest` installs the origin as a home-screen app that launches `/demo`; the manifest is app-wide (`scope: "/"`), while the Fullscreen API request stays `/demo`-only.
 
 ## 2. Frame loop and time
 

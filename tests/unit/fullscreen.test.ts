@@ -20,6 +20,18 @@ const stubDocument = ({
   return documentElement;
 };
 
+/** The orientation helpers only run on coarse pointers, so tests must say which. */
+const stubPointer = (coarse = true) => {
+  vi.stubGlobal('window', {
+    matchMedia: (query: string) => ({ matches: coarse && query === '(pointer: coarse)' }),
+  });
+};
+
+const stubOrientation = (lock = vi.fn(() => Promise.resolve())) => {
+  vi.stubGlobal('screen', { orientation: { lock, unlock: vi.fn() } });
+  return lock;
+};
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -36,6 +48,36 @@ test('the demo requests fullscreen', async () => {
   const doc = stubDocument();
   await expect(enterDemoFullscreen('/demo')).resolves.toBe(true);
   expect(doc.requestFullscreen).toHaveBeenCalledTimes(1);
+});
+
+test('the demo asks for landscape once fullscreen is granted', async () => {
+  stubDocument();
+  stubPointer();
+  const lock = stubOrientation();
+  await expect(enterDemoFullscreen('/demo')).resolves.toBe(true);
+  expect(lock).toHaveBeenCalledWith('landscape');
+});
+
+test('a fine pointer never asks for landscape', async () => {
+  stubDocument();
+  stubPointer(false);
+  const lock = stubOrientation();
+  await expect(enterDemoFullscreen('/demo')).resolves.toBe(true);
+  expect(lock).not.toHaveBeenCalled();
+});
+
+test('a refused orientation lock leaves the match in fullscreen', async () => {
+  stubDocument();
+  stubPointer();
+  stubOrientation(vi.fn(() => Promise.reject(new Error('denied'))));
+  await expect(enterDemoFullscreen('/demo')).resolves.toBe(true);
+});
+
+test('a browser without the orientation API still enters fullscreen', async () => {
+  stubDocument();
+  stubPointer();
+  vi.stubGlobal('screen', {});
+  await expect(enterDemoFullscreen('/demo')).resolves.toBe(true);
 });
 
 test('/project never requests fullscreen', async () => {
