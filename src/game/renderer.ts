@@ -533,8 +533,8 @@ export class ArenaRenderer {
       }
       g.position.set(p.x, p.y);
       g.rotation = Math.atan2(p.vy, p.vx);
-      if (p.weapon === 'grenade' || p.weapon === 'dynamite') {
-        const blink = p.fuse !== null && p.age > p.fuse - 0.9 ? 1 + Math.sin(this.time * 30) * 0.12 : 1;
+      if (p.fuse !== null) {
+        const blink = p.age > p.fuse - 0.9 ? 1 + Math.sin(this.time * 30) * 0.12 : 1;
         g.scale.set(blink);
       }
       if (Math.random() < 0.55) {
