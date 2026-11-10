@@ -46,11 +46,8 @@ test('holding a direction jumps the worm forward', async ({ page }) => {
 
   await page.keyboard.down('d');
   await page.getByTestId('btn-jump').click();
-  await page.waitForTimeout(350);
+  await expect.poll(async () => (await activeWorm(page))!.x).toBeGreaterThan(start!.x + 20);
   await page.keyboard.up('d');
-
-  const after = await activeWorm(page);
-  expect(after!.x).toBeGreaterThan(start!.x + 20);
 });
 
 test('holding the opposite direction jumps the worm back', async ({ page }) => {
@@ -60,18 +57,17 @@ test('holding the opposite direction jumps the worm back', async ({ page }) => {
 
   await page.keyboard.down('a');
   await page.getByTestId('btn-jump').click();
-  await page.waitForTimeout(350);
+  await expect.poll(async () => (await activeWorm(page))!.x).toBeLessThan(start!.x - 20);
   await page.keyboard.up('a');
-
-  const after = await activeWorm(page);
-  expect(after!.x).toBeLessThan(start!.x - 20);
 });
 
 test('a repeated J keydown does not jump', async ({ page }) => {
   await startMatch(page);
-  await page.waitForTimeout(150);
+  await page.waitForFunction(() => {
+    const state = (window as never as { __WORMAGE__: { snapshot: () => { phase: string } } }).__WORMAGE__.snapshot();
+    return state.phase === 'aim';
+  });
   await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ', repeat: true })));
-  await page.waitForTimeout(100);
 
   expect((await activeWorm(page))!.onGround).toBe(true);
 });
