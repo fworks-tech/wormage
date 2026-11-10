@@ -19,6 +19,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -27,20 +29,36 @@ jobs:
 
       - run: npm ci
 
+      - name: Select affected tests
+        id: scope
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          if [ -n "$PR_BASE" ]; then
+            node scripts/affected.mjs --base "$PR_BASE" --labels "$PR_LABELS"
+          else
+            node scripts/affected.mjs --full
+          fi
+
       - run: npm run typecheck
 
-      - run: npm test
+      - name: Unit tests
+        if: steps.scope.outputs.run_unit == 'true'
+        run: npx vitest run ${{ steps.scope.outputs.unit_args }}
 
       - run: npm run build
 
       - name: Install Chrome
+        if: steps.scope.outputs.run_e2e == 'true'
         run: npx playwright install --with-deps chrome
 
       - name: E2E
-        run: npx playwright test
+        if: steps.scope.outputs.run_e2e == 'true'
+        run: npx playwright test ${{ steps.scope.outputs.e2e_args }}
 
       - name: Upload Playwright report
-        if: failure()
+        if: failure() && steps.scope.outputs.run_e2e == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
