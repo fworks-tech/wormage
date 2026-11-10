@@ -86,7 +86,13 @@ export function ResultScreen({
           <button type="button" className="primary-btn big" onClick={onPlayAgain} data-testid="btn-play-again">
             Play again
           </button>
-          <button type="button" className="ghost-btn" onClick={onMenu} data-testid="btn-main-menu">
+          <button
+            type="button"
+            className="ghost-btn"
+            onClick={onMenu}
+            disabled={saving}
+            data-testid="btn-main-menu"
+          >
             Main menu
           </button>
         </div>
