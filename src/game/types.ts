@@ -163,7 +163,7 @@ export interface GameSnapshot {
   aiThinking: boolean;
   /** Seconds left in the post-fire movement window. */
   retreatLeft: number;
-  /** Whether the active worm is standing on terrain (a second jump becomes a flip). */
+  /** Whether the active worm is standing on terrain (jumping is only legal from the ground). */
   activeOnGround: boolean;
   /** Shortest lit fuse among projectiles in flight, or null. */
   fuseLeft: number | null;

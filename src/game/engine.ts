@@ -283,9 +283,8 @@ export class GameEngine {
 
   private applyJump(dir: -1 | 0 | 1): void {
     const worm = this.activeWorm;
-    if (!worm || !worm.alive || this.phase === 'gameover') return;
-    // Airborne jumps are flips: reset the rise, keep momentum on a neutral flip.
-    if (worm.onGround || dir !== 0) worm.vx = dir * WORM.jumpPush;
+    if (!worm || !worm.alive || this.phase === 'gameover' || !worm.onGround) return;
+    worm.vx = dir * WORM.jumpPush;
     worm.vy = -WORM.jumpVelocity;
     if (dir !== 0 && worm.facing !== dir) {
       worm.facing = dir;
@@ -458,6 +457,18 @@ export class GameEngine {
           worm.onGround = false;
         }
       }
+    }
+
+    // Holding a direction in the air steers the jump, so a vertical hop can
+    // still clear a ledge sideways.
+    if (
+      isActive &&
+      !worm.onGround &&
+      (this.phase === 'aim' || this.retreatActive) &&
+      this.moveDir !== 0 &&
+      !this.charging
+    ) {
+      worm.vx = this.moveDir * WORM.jumpPush;
     }
 
     if (!worm.onGround) {

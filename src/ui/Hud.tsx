@@ -48,7 +48,7 @@ export function Hud({
   const playerTurn = snapshot.activeTeam === 0 && snapshot.phase === 'aim' && !paused;
   const canSteer = snapshot.activeTeam === 0 && !paused && (snapshot.phase === 'aim' || snapshot.retreatLeft > 0);
   const canAim = snapshot.activeTeam === 0 && snapshot.phase === 'aim' && !paused;
-  const canJump = snapshot.activeTeam === 0 && snapshot.phase !== 'gameover' && !paused;
+  const canJump = snapshot.activeTeam === 0 && snapshot.phase !== 'gameover' && !paused && snapshot.activeOnGround;
   const myTeam = snapshot.teams[0];
   const enemy = snapshot.teams[1];
   const weapon = WEAPONS[snapshot.weapon];
@@ -259,7 +259,7 @@ export function Hud({
             disabled={!canJump}
             data-testid="btn-jump"
           >
-            {snapshot.activeOnGround ? 'Jump' : 'Flip'}
+            Jump
           </button>
         </div>
 

@@ -64,6 +64,7 @@ Destruction (`Terrain.carve`) zeroes the mask circle, then fires `onCarve`. The 
 ## 4. Physics and combat rules
 
 - Gravity: worms 780 px/s², projectiles 520 px/s² scaled per weapon.
+- A jump starts only from the ground; there is no double jump. Holding a direction while airborne sets horizontal velocity, so a vertical hop can be steered sideways over a ledge.
 - Wind: `-max..max` units per ruleset, applied as horizontal acceleration scaled per weapon (`windScale`); the AI and the aim preview use the same value.
 - Aiming is an absolute world angle stored in `[AIM.min, AIM.max]` (`-3.04` to `-0.1`); facing is derived from `cos(angle)`. Walking flips the angle with `mirrorAngle` so the barrel stays on the leading side.
 - Damage falls off linearly with distance, floored at 22% of the weapon's base damage inside the blast radius.

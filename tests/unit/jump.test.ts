@@ -44,35 +44,41 @@ describe('jump physics', () => {
     expect(back.worm.x).toBeLessThan(370);
   });
 
-  test('a second jump in the air flips to a higher apex', () => {
-    const single = flatEngine();
-    single.engine.jump(0);
-    let singleApex = single.worm.y;
-    for (let i = 0; i < 120; i += 1) {
-      single.engine.update(DT);
-      singleApex = Math.min(singleApex, single.worm.y);
-      if (single.worm.onGround && i > 5) break;
-    }
+  test('a jump in the air is ignored', () => {
+    const { engine, worm } = flatEngine();
+    engine.jump(0);
+    step(engine, 0.2);
+    const vy = worm.vy;
+    const jumps = engine.events.filter((event) => event.type === 'jump').length;
 
-    const double = flatEngine();
-    double.engine.jump(0);
-    step(double.engine, 0.35);
-    double.engine.jump(0);
-    let doubleApex = double.worm.y;
-    for (let i = 0; i < 120; i += 1) {
-      double.engine.update(DT);
-      doubleApex = Math.min(doubleApex, double.worm.y);
-      if (double.worm.onGround && i > 5) break;
-    }
+    engine.jump(0);
 
-    expect(doubleApex).toBeLessThan(singleApex - 40);
+    expect(worm.vy).toBe(vy);
+    expect(engine.events.filter((event) => event.type === 'jump')).toHaveLength(jumps);
   });
 
-  test('a turn allows unlimited jumps', () => {
-    const { engine } = flatEngine();
-    for (let i = 0; i < 6; i += 1) engine.jump(0);
+  test('holding a direction steers a vertical jump in the air', () => {
+    const { engine, worm } = flatEngine();
+    engine.jump(0);
+    step(engine, 0.15);
+    const startX = worm.x;
 
-    expect(engine.events.filter((event) => event.type === 'jump')).toHaveLength(6);
+    engine.setMove(1);
+    step(engine, 0.3);
+
+    expect(worm.onGround).toBe(false);
+    expect(worm.x).toBeGreaterThan(startX + 30);
+  });
+
+  test('a worm must land before it can jump again', () => {
+    const { engine, worm } = flatEngine();
+    engine.jump(0);
+    step(engine, 1.2);
+    expect(worm.onGround).toBe(true);
+
+    engine.jump(0);
+
+    expect(engine.events.filter((event) => event.type === 'jump')).toHaveLength(2);
   });
 
   test('jumping is legal after firing, while the projectile is in flight', () => {
@@ -85,17 +91,6 @@ describe('jump physics', () => {
 
     expect(worm.vy).toBeLessThan(0);
     expect(engine.events.some((event) => event.type === 'jump')).toBe(true);
-  });
-
-  test('repeated flips never leave the top of the world', () => {
-    const { engine, worm } = flatEngine();
-    worm.y = 20;
-    for (let i = 0; i < 20; i += 1) {
-      engine.jump(0);
-      engine.update(DT);
-    }
-
-    expect(worm.y).toBeGreaterThanOrEqual(0);
   });
 
   test('a dead worm cannot jump', () => {

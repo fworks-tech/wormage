@@ -16,31 +16,28 @@ const activeWorm = (page: import('@playwright/test').Page) =>
     return worm ? { x: worm.x, y: worm.y, vy: worm.vy, onGround: worm.onGround } : null;
   });
 
-test('the Jump button hops, then flips higher in the air', async ({ page }) => {
+test('the Jump button hops, then ignores a second press in the air', async ({ page }) => {
   await startMatch(page);
   const start = await activeWorm(page);
   expect(start).not.toBeNull();
 
   await page.getByTestId('btn-jump').click();
-  await expect(page.getByTestId('btn-jump')).toHaveText('Flip');
-  // Click the real button from inside the page: Playwright's actionability wait
-  // can outlive the fall on a slow runner, turning the Flip into a ground jump.
-  const falling = await page.waitForFunction<number | null>(() => {
-    const worm = (window as never as { __WORMAGE__: { engine: { activeWorm: WormState | null } } }).__WORMAGE__
-      .engine.activeWorm;
-    if (!worm || worm.vy <= 0) return null;
-    const y = worm.y;
-    document.querySelector<HTMLButtonElement>('[data-testid="btn-jump"]')!.click();
-    return y;
+  await expect(page.getByTestId('btn-jump')).toBeDisabled();
+
+  // Dispatch J and compare the velocity in the same turn of the event loop:
+  // a real second jump would reset vy to -300.
+  const result = await page.evaluate(() => {
+    const engine = (window as never as { __WORMAGE__: { engine: { activeWorm: WormState | null } } }).__WORMAGE__
+      .engine;
+    const worm = engine.activeWorm;
+    const before = worm?.vy ?? 0;
+    const wasAirborne = Boolean(worm && !worm.onGround);
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ' }));
+    return { before, after: worm?.vy ?? 0, wasAirborne };
   });
 
-  const fallingY = await falling.jsonValue();
-  await expect
-    .poll(async () => {
-      const worm = await activeWorm(page);
-      return worm ? worm.y : Number.POSITIVE_INFINITY;
-    })
-    .toBeLessThan(fallingY! - 20);
+  expect(result.wasAirborne).toBe(true);
+  expect(result.after).toBe(result.before);
 });
 
 test('holding a direction jumps the worm forward', async ({ page }) => {
