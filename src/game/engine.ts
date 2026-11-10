@@ -5,6 +5,7 @@ import {
   CHARGE_SECONDS,
   DIFFICULTY,
   GRAVITY,
+  JUMP_REACH,
   PROJECTILE_GRAVITY,
   RETREAT_SECONDS,
   TEAMS,
@@ -717,10 +718,14 @@ export class GameEngine {
       // Blocked or out of turn time: take the best bazooka shot from here.
       if (this.aiStall < 1.5 && this.timeLeft > 0.5) return;
 
-      // A blocked AI walk keeps flipping for a bounded window, then shoots from here.
+      // A blocked AI walk keeps jumping for a bounded window, then shoots from
+      // here. Terrain can change mid-turn, so re-check the plan's reach.
+      const planGround = this.terrain.groundY(plan.fireX, Math.max(0, worm.y - JUMP_REACH - 12), WATER_Y);
+      const planInReach = planGround !== null && worm.y - planGround <= JUMP_REACH;
       if (
         this.aiStall >= 1.5 &&
         worm.onGround &&
+        planInReach &&
         (this.aiJumpDeadline === null || this.timeLeft > this.aiJumpDeadline)
       ) {
         if (this.aiJumpDeadline === null) {

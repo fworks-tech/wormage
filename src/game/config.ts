@@ -32,6 +32,9 @@ export const WORM = {
   fallDamagePerPx: 0.16,
 } as const;
 
+/** Peak height of a jump, derived so planning and physics cannot drift. */
+export const JUMP_REACH = (WORM.jumpVelocity * WORM.jumpVelocity) / (2 * GRAVITY);
+
 export const AIM = {
   min: -3.04,
   max: -0.1,

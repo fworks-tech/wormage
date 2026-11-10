@@ -121,6 +121,78 @@ describe('jump physics', () => {
     expect(engine.events.some((event) => event.type === 'jump')).toBe(false);
   });
 
+  test('the AI does not jump at a ledge above jump reach', () => {
+    const engine = new GameEngine(config());
+    Object.assign(engine.terrain, {
+      isSolid: (x: number, y: number) => y >= (x >= 460 ? 420 : 500),
+      groundY: (x: number, fromY: number, maxDown = 260) => {
+        const top = x >= 460 ? 420 : 500;
+        const start = Math.max(top, Math.ceil(fromY / 4) * 4);
+        return start <= fromY + maxDown ? start : null;
+      },
+    });
+    engine.endTurn();
+    const worm = engine.activeWorm!;
+    worm.x = 400;
+    worm.y = 500;
+    worm.vy = 0;
+    worm.onGround = true;
+    worm.airborne = false;
+    worm.fallDistance = 0;
+
+    const internals = engine as unknown as {
+      aiPlan: { weapon: 'bazooka'; fireX: number; angle: number; power: number; retreatX: number } | null;
+      aiThinking: boolean;
+    };
+    internals.aiPlan = {
+      weapon: 'bazooka',
+      fireX: 500,
+      angle: -0.5,
+      power: 0.5,
+      retreatX: worm.x,
+    };
+    internals.aiThinking = false;
+
+    step(engine, 2.5);
+
+    expect(engine.events.filter((event) => event.type === 'jump')).toHaveLength(0);
+    expect(engine.hasFired).toBe(true);
+  });
+
+  test('the AI fires instead of jumping when its firing spot vanished', () => {
+    const engine = new GameEngine(config());
+    Object.assign(engine.terrain, {
+      isSolid: (x: number) => x >= 430,
+      groundY: (x: number) => (x >= 430 ? null : 500),
+    });
+    engine.endTurn();
+    const worm = engine.activeWorm!;
+    worm.x = 400;
+    worm.y = 500;
+    worm.vy = 0;
+    worm.onGround = true;
+    worm.airborne = false;
+    worm.fallDistance = 0;
+
+    const internals = engine as unknown as {
+      aiPlan: { weapon: 'bazooka'; fireX: number; angle: number; power: number; retreatX: number } | null;
+      aiThinking: boolean;
+    };
+    internals.aiPlan = {
+      weapon: 'bazooka',
+      fireX: 500,
+      angle: -0.5,
+      power: 0.5,
+      retreatX: worm.x,
+    };
+    internals.aiThinking = false;
+
+    step(engine, 2.5);
+
+    expect(engine.events.filter((event) => event.type === 'jump')).toHaveLength(0);
+    expect(engine.hasFired).toBe(true);
+  });
+
   test('the AI keeps jumping while its walk is blocked', () => {
     const engine = new GameEngine(config());
     const blockedX = 1200;

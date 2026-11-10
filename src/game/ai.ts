@@ -2,6 +2,7 @@ import {
   AIM,
   BOUNCE,
   GRAVITY,
+  JUMP_REACH,
   PREVIEW_SECONDS,
   PROJECTILE_GRAVITY,
   RETREAT_SECONDS,
@@ -259,7 +260,7 @@ export function planAiTurn(input: AiTurnInput): AiTurnPlan | null {
   };
 }
 
-function firingPositions(terrain: AiTerrain, worm: AiWorm, budget: number): Array<{ x: number; y: number }> {
+export function firingPositions(terrain: AiTerrain, worm: AiWorm, budget: number): Array<{ x: number; y: number }> {
   const xs = new Set<number>([worm.x]);
   for (let offset = 50; offset <= budget + 50; offset += 50) {
     xs.add(worm.x - offset);
@@ -267,13 +268,16 @@ function firingPositions(terrain: AiTerrain, worm: AiWorm, budget: number): Arra
   }
 
   const positions: Array<{ x: number; y: number }> = [];
+  // Start above the highest pixel a jump can reach; a column that is already
+  // solid there is a cliff the worm cannot climb.
+  const scanTop = Math.max(0, worm.y - JUMP_REACH - 12);
   for (const rawX of xs) {
     if (rawX < 20 || rawX > WORLD_W - 20) continue;
     const x = Math.round(rawX / 4) * 4;
-    const ground =
-      terrain.groundY(x, worm.y - 60, 200) ?? terrain.groundY(x, 120, WATER_Y - 120);
-    // Walkable ground only: no water, no cliffs the worm cannot climb.
-    if (ground === null || ground > WATER_Y - 30 || Math.abs(ground - worm.y) > 90) continue;
+    const ground = terrain.groundY(x, scanTop, WATER_Y - scanTop);
+    // Walkable ground only: no water, no cliff above jump reach, no damaging drop.
+    if (ground === null || ground > WATER_Y - 30) continue;
+    if (worm.y - ground > JUMP_REACH || ground - worm.y > WORM.fallSafePx) continue;
     positions.push({ x, y: ground });
   }
   return positions.sort((a, b) => Math.abs(a.x - worm.x) - Math.abs(b.x - worm.x));

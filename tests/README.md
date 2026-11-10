@@ -49,7 +49,7 @@ Seeds: `/demo?seed=4242` fixes terrain generation and AI jitter so combat tests 
 | File | Covers |
 | --- | --- |
 | `unit/engine.test.ts` | seeded construction without a DOM, wind, ammo, turn transitions, wipeout, surrender, scoring, blast falloff |
-| `unit/ai.test.ts` | reticle radius, AI weapon/firing-spot choice, left-facing aim, retreat and dynamite escape, preview and aim clamp |
+| `unit/ai.test.ts` | reticle radius, AI weapon/firing-spot choice, jump-reach limit, left-facing aim, retreat and dynamite escape, preview and aim clamp |
 | `unit/mockServer.test.ts` | leaderboard pagination and ranking, ruleset filter, idempotent registration |
 | `unit/replay.test.ts` | a recorded action log (walk, grenade bounce, kill) replays to the same final snapshot; jump/end-turn dispatch |
 | `unit/jump.test.ts` | ground-only jumps, directional jumps, air steering, jump during flight, AI jump when blocked |
