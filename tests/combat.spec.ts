@@ -141,6 +141,30 @@ test('the on-screen walk buttons move the worm during retreat', async ({ page })
   expect(after!).toBeLessThan(before!);
 });
 
+test('a held walk key does not survive an auto-pause', async ({ page }) => {
+  await startMatch(page);
+  const startX = await activeX(page);
+  await page.keyboard.down('d');
+  await expect.poll(async () => (await activeX(page)) ?? -1).toBeGreaterThan(startX! + 5);
+
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  await expect(page.getByTestId('btn-resume')).toBeVisible();
+  const pausedX = await activeX(page);
+  const pausedTime = (await snapshot(page)).timeLeft;
+
+  await page.keyboard.up('d');
+  await page.getByTestId('btn-resume').click();
+  await page.waitForFunction(
+    (time) => {
+      const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
+      return state.timeLeft < time;
+    },
+    pausedTime,
+  );
+
+  expect(await activeX(page)).toBeCloseTo(pausedX!, 1);
+});
+
 test('weapon selection follows ammo and keyboard shortcuts', async ({ page }) => {
   await startMatch(page);
   await page.getByTestId('weapon-dynamite').click();

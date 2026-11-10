@@ -60,7 +60,11 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
     if (engineRef.current) {
       engineRef.current.moveDir = 0;
       // A release under the pause card must not fire the held shot.
-      if (value) engineRef.current.cancelCharge();
+      if (value) {
+        engineRef.current.cancelCharge();
+        // Keyup can land on the pause dialog; drop held movement on resume.
+        keysRef.current.clear();
+      }
     }
     hudMoveRef.current = 0;
   }, []);
@@ -144,6 +148,9 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
               hudMoveRef.current = 0;
               engine.setMove(0);
             }
+          } else {
+            // A pad held when the turn passed must not walk the next human worm.
+            hudMoveRef.current = 0;
           }
 
           engine.update(FIXED_DT);
@@ -280,7 +287,7 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
           if (!e.repeat && snap.activeTeam === 0) engine.startCharge();
           break;
         case 'KeyJ':
-          engine.jump();
+          if (!e.repeat && snap.activeTeam === 0) engine.jump();
           break;
         case 'Digit1':
         case 'Digit2':
