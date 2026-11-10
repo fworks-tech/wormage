@@ -130,3 +130,26 @@ test.describe('HUD layout 915x412 landscape', () => {
     expect((await box(page, '.weapon-dock')).height).toBeLessThanOrEqual(52);
   });
 });
+
+test('the desktop HUD hides the touch controls and centers the weapon dock', async ({ page }) => {
+  test.skip(test.info().project.name !== 'desktop', 'desktop-only layout');
+  await startMatch(page);
+
+  for (const id of ['btn-pause', 'btn-left', 'btn-right', 'btn-jump', 'btn-fire', 'btn-end-turn']) {
+    await expect(page.getByTestId(id)).toBeHidden();
+  }
+  await expect(page.getByTestId('weapon-bazooka')).toBeVisible();
+  await expect(page.getByTestId('btn-rope')).toBeVisible();
+
+  const dock = await box(page, '.weapon-dock');
+  expect(Math.abs(dock.x + dock.width / 2 - page.viewportSize()!.width / 2)).toBeLessThan(2);
+
+  await page.keyboard.down('Space');
+  await page.waitForTimeout(120);
+  await page.keyboard.up('Space');
+  expect((await page.evaluate(() => (window as never as { __WORMAGE__: { snapshot: () => { phase: string } } }).__WORMAGE__.snapshot())).phase).not.toBe('aim');
+
+  await page.keyboard.press('p');
+  await expect(page.getByTestId('btn-resume')).toBeVisible();
+  await expect(page.locator('.pause-help-keyboard')).toBeVisible();
+});

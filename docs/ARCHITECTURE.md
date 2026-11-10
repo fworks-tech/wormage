@@ -114,6 +114,8 @@ Because the solver and the game share one integrator, the CPU never "cheats" —
 - UI pushes at most every 100 ms.
 - Buttons call engine methods; no state is copied into React for writing.
 - The HUD is a pure function of `snapshot`.
+- The HUD is pointer-aware: a fine pointer hides the touch pad, Jump, pause, power, FIRE and End Turn (`Space`/drag fires, `E` ends the turn, `P`/`Esc` pauses) and lists the bindings in the pause dialog; a coarse pointer keeps the full on-screen HUD.
+- Weapon cards use inline SVG art (`WeaponIcon.tsx`) instead of text glyphs, so the deck stays sharp at every DPR without an asset pipeline.
 - Accessibility: the arena is a labelled `role="img"`, a polite live region announces the active team/worm and remaining seconds (not every frame), all controls are real buttons with labels, and the pause dialog traps attention with `aria-modal`.
 
 ## 8. Data layer

@@ -7,6 +7,7 @@ import { useLeaderboard, useMatchHistory } from '../api/queries';
 import { Leaderboard } from './Leaderboard';
 import { MatchHistory } from './MatchHistory';
 import { OptionsPanel } from './OptionsPanel';
+import { WeaponIcon } from './WeaponIcon';
 
 export type MenuTab = 'briefing' | 'ranking' | 'history' | 'options';
 
@@ -148,7 +149,7 @@ export function MainMenu({ settings, player, onStart, onSaveSettings, lastResult
                 <ul>
                   {Object.values(WEAPONS).map((weapon) => (
                     <li key={weapon.id}>
-                      <span className="weapon-glyph">{weapon.glyph}</span>
+                      <WeaponIcon id={weapon.id} />
                       <span>
                         <strong>{weapon.name}</strong>
                         <small>{weapon.blurb}</small>

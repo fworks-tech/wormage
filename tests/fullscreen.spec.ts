@@ -69,7 +69,8 @@ test('exiting fullscreen is respected and the pause dialog restores it', async (
   await startMatch(page);
   await expect.poll(() => fullscreenTag(page)).toBe('HTML');
 
-  await page.getByTestId('btn-pause').click();
+  if (test.info().project.name === 'desktop') await page.keyboard.press('p');
+  else await page.getByTestId('btn-pause').click();
   await expect(page.getByTestId('btn-fullscreen')).toHaveCount(0);
   const before = await snapshot(page);
 

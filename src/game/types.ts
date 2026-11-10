@@ -51,7 +51,6 @@ export interface WeaponDef {
   /** `drop` weapons are placed at the worm's feet and have no aim reticle. */
   kind: 'projectile' | 'drop';
   name: string;
-  glyph: string;
   ammo: number | null;
   damage: number;
   radius: number;
