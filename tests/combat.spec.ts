@@ -221,18 +221,16 @@ test('the shooter can retreat during the post-fire window', async ({ page }) => 
 
 test('surrendering mid-flight leaves no frozen projectile', async ({ page }) => {
   await startMatch(page);
-  await page.getByTestId('weapon-grenade').click();
-  await page.getByTestId('btn-fire').click();
-  await page.waitForFunction(() => {
-    const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
-    return state.phase === 'projectile' && state.fuseLeft !== null;
-  });
 
+  // Fire and surrender in one tick: a UI click can resolve after the grenade
+  // already hit a worm, and then there is no in-flight shot left to check.
   const after = await page.evaluate(() => {
     const engine = (
       window as never as {
         __WORMAGE__: {
           engine: {
+            weapon: string;
+            fire: () => void;
             surrender: () => void;
             projectilesInFlight: readonly unknown[];
             snapshot: () => Snapshot;
@@ -240,15 +238,20 @@ test('surrendering mid-flight leaves no frozen projectile', async ({ page }) => 
         };
       }
     ).__WORMAGE__.engine;
+    engine.weapon = 'grenade';
+    engine.fire();
+    const inFlightBefore = engine.projectilesInFlight.length;
     engine.surrender();
     const state = engine.snapshot();
     return {
+      inFlightBefore,
       phase: state.phase,
       fuseLeft: state.fuseLeft,
       inFlight: engine.projectilesInFlight.length,
     };
   });
 
+  expect(after.inFlightBefore).toBeGreaterThan(0);
   expect(after.phase).toBe('gameover');
   expect(after.inFlight).toBe(0);
   expect(after.fuseLeft).toBeNull();
