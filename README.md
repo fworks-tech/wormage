@@ -14,10 +14,6 @@ Artillery is a small ruleset with unusually demanding engineering underneath: de
 
 The genre also forces the separation this project is built around: the simulation cannot depend on the renderer, the frame rate or React.
 
-## One developer, one demo, a bigger game
-
-Wormage is built in the open by one developer — [Fabio Borges](https://flabs.tech), a full-stack and AI engineer from Joinville, Brazil. The live build is the first version: a complete artillery skirmish that proves the core. The real game adds a campaign, progression, online matches and a server that owns the result.
-
 The [full story](docs/ABOUT.md) explains what exists today, what comes next and why the project is built in public. The [roadmap](docs/ROADMAP.md) tracks the milestones.
 
 ## Stack
