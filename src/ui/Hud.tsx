@@ -58,8 +58,11 @@ export function Hud({
       ? fuseLeft.toFixed(1)
       : String(Math.ceil(snapshot.retreatLeft))
     : String(Math.ceil(snapshot.timeLeft));
-  const fuseTotal = WEAPONS[snapshot.weapon].fuse ?? RETREAT_SECONDS;
-  const countdownRatio = inFlight ? Math.min(1, (fuseLeft ?? snapshot.retreatLeft) / fuseTotal) : timeRatio;
+  const countdownRatio = inFlight
+    ? fuseLeft !== null
+      ? Math.min(1, fuseLeft / (weapon.fuse ?? RETREAT_SECONDS))
+      : Math.min(1, snapshot.retreatLeft / RETREAT_SECONDS)
+    : timeRatio;
   const phaseLabel = inFlight ? (fuseLeft !== null ? 'Fuse' : 'Retreat') : activeWorm?.name ?? '';
 
   useHoldRepeat(() => onAim(1), holdAimUp.current);
