@@ -48,7 +48,7 @@ npm run test:e2e       # Playwright (uses installed Chrome)
 
 `npm run dev` boots the MSW service worker, so the ranking and history tabs work offline. In the single-file build the same REST surface is served by an in-process Axios adapter, because sandboxed iframes cannot register service workers.
 
-`/` redirects to `/demo`, where a New Game dialog starts the match; `/project` is this informational page. The single-file build has no real routes — open it at `/` and it starts on the demo screen.
+`/` redirects to `/demo`, where a New Game dialog starts the match; `/project` is this informational page. The single-file build has no real routes — open it at `/`, it starts on the demo screen, and the dialog hides the project link.
 
 ## How to play
 

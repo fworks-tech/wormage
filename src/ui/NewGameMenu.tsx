@@ -4,6 +4,9 @@ interface NewGameMenuProps {
 
 /** Landing dialog for /demo: the game is one click away, the project page one link away. */
 export function NewGameMenu({ onStart }: NewGameMenuProps) {
+  // The single-file build has no routes, so /project would leave the app.
+  const hasRoutes = import.meta.env.MODE !== 'single';
+
   return (
     <div className="menu-shell">
       <div className="overlay" role="dialog" aria-modal="true" aria-label="New game">
@@ -15,9 +18,11 @@ export function NewGameMenu({ onStart }: NewGameMenuProps) {
             <button type="button" className="primary-btn" onClick={onStart} data-testid="btn-play">
               Start Game
             </button>
-            <a className="ghost-btn" href="/project" data-testid="btn-project">
-              See Project
-            </a>
+            {hasRoutes && (
+              <a className="ghost-btn" href="/project" data-testid="btn-project">
+                See Project
+              </a>
+            )}
           </div>
         </div>
       </div>
