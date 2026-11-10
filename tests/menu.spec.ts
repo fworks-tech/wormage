@@ -62,6 +62,20 @@ test('options persist after reload and clamp the timer', async ({ page }) => {
   await expect(page.locator('.table-meta')).toContainText('60s');
 });
 
+test('the demo menu animates a generated arena behind the dialog', async ({ page }) => {
+  await page.goto('/demo?seed=4242');
+  const backdrop = page.getByTestId('menu-backdrop');
+  await expect(backdrop).toBeVisible();
+  await expect(backdrop.locator('canvas')).toHaveCount(2);
+  await expect(page.getByTestId('btn-play')).toBeVisible();
+  // The backdrop is decoration: no match canvas, HUD or worms behind the card.
+  await expect(page.getByTestId('arena')).toHaveCount(0);
+
+  await expect.poll(() => backdrop.getAttribute('data-scene')).toMatch(/^\d+$/);
+  const first = await backdrop.getAttribute('data-scene');
+  await expect.poll(() => backdrop.getAttribute('data-scene'), { timeout: 5000 }).not.toBe(first);
+});
+
 test('empty and failing archive scenarios render recoverable states', async ({ page }) => {
   await page.goto('/project');
   await page.getByTestId('tab-options').click();
