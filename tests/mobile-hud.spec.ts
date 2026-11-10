@@ -157,4 +157,18 @@ test.describe('touch HUD', () => {
 
     expect((await snapshot(page)).phase).not.toBe('aim');
   });
+
+  test('the FIRE button shows the charge percentage', async ({ page }) => {
+    await startMatch(page);
+    const cdp = await page.context().newCDPSession(page);
+    const fire = await centerOf(page, 'btn-fire');
+
+    await expect(page.getByTestId('btn-fire')).toContainText('hold');
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [fire] });
+    await page.waitForFunction(
+      () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().charging,
+    );
+    await expect(page.getByTestId('btn-fire')).toContainText('%');
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+  });
 });

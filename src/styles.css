@@ -703,6 +703,10 @@ select {
   flex-direction: column;
   justify-content: space-between;
   padding: clamp(8px, 1.6vw, 18px);
+  padding-top: max(clamp(8px, 1.6vw, 18px), env(safe-area-inset-top));
+  padding-right: max(clamp(8px, 1.6vw, 18px), env(safe-area-inset-right));
+  padding-bottom: max(clamp(8px, 1.6vw, 18px), env(safe-area-inset-bottom));
+  padding-left: max(clamp(8px, 1.6vw, 18px), env(safe-area-inset-left));
   pointer-events: none;
   gap: 10px;
 }
@@ -1356,6 +1360,7 @@ select {
 
 @media (max-width: 760px) {
   .hud-top {
+    position: relative;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
       'turn turn'
@@ -1404,7 +1409,7 @@ select {
 
   .wind {
     position: absolute;
-    top: 62px;
+    top: calc(100% + 6px);
     left: 50%;
     transform: translateX(-50%);
     grid-template-areas: 'label value' 'arrow arrow';
@@ -1420,8 +1425,8 @@ select {
   .pause-btn {
     position: absolute;
     right: 12px;
-    top: 62px;
-    height: 40px;
+    top: calc(100% + 6px);
+    height: 44px;
     z-index: 2;
   }
 
@@ -1440,11 +1445,17 @@ select {
   }
 
   .hud-bottom {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      'weapons weapons'
+      'move actions';
+    align-items: end;
     gap: 8px;
   }
 
   .weapon-dock {
+    grid-area: weapons;
     order: -1;
     width: 100%;
     justify-content: center;
@@ -1454,12 +1465,19 @@ select {
   .weapon-card {
     flex: 1;
     min-width: 0;
+    min-height: 44px;
     max-width: 92px;
     padding: 6px;
   }
 
   .move-cluster {
+    grid-area: move;
+    align-items: center;
     gap: 6px;
+  }
+
+  .aim-cluster {
+    gap: 4px;
   }
 
   .pad-btn {
@@ -1468,23 +1486,25 @@ select {
   }
 
   .pad-btn-small {
-    width: 48px;
-    height: 24px;
+    width: 44px;
+    height: 44px;
   }
 
   .jump-btn {
-    width: 52px;
-    height: 32px;
+    width: 48px;
+    height: 48px;
+    align-self: center;
   }
 
   .action-cluster {
+    grid-area: actions;
+    justify-self: end;
     gap: 8px;
-    margin-left: auto;
+    margin-left: 0;
   }
 
   .power-wrap {
-    width: 90px;
-    padding: 6px 8px;
+    display: none;
   }
 
   .fire-btn {
@@ -1494,7 +1514,7 @@ select {
   }
 
   .end-turn {
-    height: 34px;
+    height: 44px;
     padding: 8px 10px;
     font-size: 10px;
   }
@@ -1521,9 +1541,113 @@ select {
   .hide-sm {
     display: none;
   }
+}
 
-  .move-cluster .jump-btn {
+@media (max-width: 380px) {
+  .move-cluster {
+    gap: 4px;
+  }
+
+  .action-cluster {
+    gap: 6px;
+  }
+
+  .pad-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .jump-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .fire-btn {
+    width: 64px;
+    height: 60px;
+    font-size: 18px;
+  }
+
+  .end-turn {
+    padding: 8px 6px;
+  }
+}
+
+@media (max-height: 480px) {
+  .hud-bottom {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .weapon-dock {
+    order: 0;
+    flex: 1;
+    width: auto;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  .weapon-card {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    padding: 6px;
+  }
+
+  .weapon-name {
     display: none;
+  }
+
+  .move-cluster {
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .aim-cluster {
+    flex-direction: row;
+    gap: 4px;
+  }
+
+  .pad-btn {
+    width: 48px;
+    height: 48px;
+  }
+
+  .pad-btn-small {
+    width: 44px;
+    height: 44px;
+  }
+
+  .jump-btn {
+    width: 48px;
+    height: 44px;
+  }
+
+  .action-cluster {
+    gap: 8px;
+    margin-left: 0;
+  }
+
+  .power-wrap {
+    display: none;
+  }
+
+  .fire-btn {
+    width: 72px;
+    height: 60px;
+    font-size: 19px;
+  }
+
+  .end-turn {
+    height: 44px;
+    padding: 8px 10px;
+    font-size: 10px;
+  }
+
+  .pause-btn {
+    height: 44px;
   }
 }
 

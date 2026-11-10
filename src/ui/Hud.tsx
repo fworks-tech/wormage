@@ -301,7 +301,7 @@ export function Hud({
             }}
           >
             FIRE
-            <small>hold</small>
+            <small>{snapshot.charging ? `${Math.round(snapshot.power * 100)}%` : 'hold'}</small>
           </button>
           <button
             type="button"
