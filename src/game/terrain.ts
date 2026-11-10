@@ -216,6 +216,8 @@ export class Terrain {
     const ctx = this.ctx;
     ctx.save();
     ctx.globalCompositeOperation = 'destination-out';
+    // Opaque: destination-out erases by source alpha, so an inherited translucent fill only tints.
+    ctx.fillStyle = '#000';
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fill();
