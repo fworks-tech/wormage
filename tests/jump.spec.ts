@@ -16,13 +16,13 @@ const activeWorm = (page: import('@playwright/test').Page) =>
     return worm ? { x: worm.x, y: worm.y, vy: worm.vy, onGround: worm.onGround } : null;
   });
 
-test('the Jump button hops, then flips higher in the air', async ({ page }) => {
+test('the Jump button hops, then ignores a second press in the air', async ({ page }) => {
   await startMatch(page);
   const start = await activeWorm(page);
   expect(start).not.toBeNull();
 
   await page.getByTestId('btn-jump').click();
-  await expect(page.getByTestId('btn-jump')).toHaveText('Flip');
+  await expect(page.getByTestId('btn-jump')).toBeDisabled();
   await page.waitForFunction(() => {
     const worm = (window as never as { __WORMAGE__: { engine: { activeWorm: WormState | null } } }).__WORMAGE__
       .engine.activeWorm;
@@ -30,13 +30,12 @@ test('the Jump button hops, then flips higher in the air', async ({ page }) => {
   });
 
   const falling = await activeWorm(page);
-  await page.getByTestId('btn-jump').click();
-  await expect
-    .poll(async () => {
-      const worm = await activeWorm(page);
-      return worm ? worm.y : Number.POSITIVE_INFINITY;
-    })
-    .toBeLessThan(falling!.y - 20);
+  await page.keyboard.press('j');
+
+  const after = await activeWorm(page);
+  expect(after!.onGround).toBe(false);
+  expect(after!.vy).toBeGreaterThan(0);
+  expect(after!.y).toBeGreaterThan(falling!.y - 2);
 });
 
 test('holding a direction jumps the worm forward', async ({ page }) => {

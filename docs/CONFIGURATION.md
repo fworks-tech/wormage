@@ -20,8 +20,8 @@ Every gameplay number lives in `src/game/config.ts`. Balance changes should neve
 | `GRAVITY` | 780 | px/s² | worms only |
 | `PROJECTILE_GRAVITY` | 520 | px/s² | multiplied by the weapon's `gravityScale` |
 | `WORM.walkSpeed` | 74 | px/s | unaffected by wind |
-| `WORM.jumpVelocity` | 300 | px/s | each jump resets the rise; unlimited per turn |
-| `WORM.jumpPush` | 180 | px/s | horizontal carry of a front/back jump |
+| `WORM.jumpVelocity` | 300 | px/s | jump start only from the ground; one jump per landing |
+| `WORM.jumpPush` | 180 | px/s | horizontal carry of a jump, and the air-steer speed while holding a direction |
 | `AI.jumpWindowSeconds` | 6 | s | a blocked AI walk may keep jumping before it shoots from where it stands |
 | `WORM.maxHp` | 100 | HP | per worm |
 | `WORM.fallSafePx` | 150 | px | free fall before damage |
