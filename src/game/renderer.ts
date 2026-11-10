@@ -4,6 +4,7 @@ import { aimPoint } from './aim';
 import type { GameEngine } from './engine';
 import type { GameEvent, GameSnapshot, WeaponId, Worm } from './types';
 import { previewFlight } from './ai';
+import { TerrainPainter } from './terrain-painter';
 
 const FONT_DISPLAY = 'Anton, Impact, sans-serif';
 const FONT_BODY = '"Space Grotesk", system-ui, sans-serif';
@@ -147,6 +148,7 @@ export class ArenaRenderer {
   private readonly aimLayer = new Container();
   private readonly overlay = new Container();
 
+  readonly terrainPainter: TerrainPainter;
   private readonly terrainSprite: Sprite;
   private readonly water = new Graphics();
   private readonly aim = new Graphics();
@@ -177,9 +179,13 @@ export class ArenaRenderer {
     this.terrainLayer.addChild(sky);
     this.terrainLayer.addChild(this.water);
 
-    this.terrainSprite = new Sprite(Texture.from(engine.terrain.canvas));
+    this.terrainPainter = new TerrainPainter(engine.terrain);
+    this.terrainSprite = new Sprite(Texture.from(this.terrainPainter.canvas));
     this.terrainLayer.addChild(this.terrainSprite);
-    engine.terrain.onCarve = () => this.terrainSprite.texture.source.update();
+    engine.terrain.onCarve = (x, y, radius) => {
+      this.terrainPainter.carve(x, y, radius);
+      this.terrainSprite.texture.source.update();
+    };
 
     this.fxLayer.addChild(this.fx);
     this.aimLayer.addChild(this.aim);

@@ -198,6 +198,8 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
           return;
         }
         rendererRef.current = renderer;
+        // E2E needs the painted canvas; the renderer owns it now.
+        (window as unknown as { __WORMAGE__: { painter: unknown } }).__WORMAGE__.painter = renderer.terrainPainter;
         renderer.app.ticker.add(tick);
         setReady(true);
       } catch (err) {
