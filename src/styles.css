@@ -702,6 +702,14 @@ select {
   gap: 10px;
 }
 
+/* A wide window letterboxes the 16:9 world; keep the HUD on the scene, not the bars. */
+@media (min-aspect-ratio: 16 / 9) {
+  .hud {
+    max-width: calc(100vh * 16 / 9);
+    margin-inline: auto;
+  }
+}
+
 .hud button,
 .hud .team-panel,
 .hud .turn-block,

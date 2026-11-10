@@ -211,6 +211,11 @@ export class GameEngine {
     this.fire();
   }
 
+  cancelCharge(): void {
+    this.charging = false;
+    this.power = 0;
+  }
+
   selectWeapon(id: WeaponId): void {
     if (this.phase !== 'aim') return;
     const ammo = this.teams[this.activeTeam].ammo[id];
@@ -312,6 +317,7 @@ export class GameEngine {
     this.endReason = reason;
     this.charging = false;
     this.moveDir = 0;
+    this.projectiles = [];
     this.events.push({ type: 'gameover', winnerTeamId: winner });
   }
 
@@ -543,7 +549,8 @@ export class GameEngine {
 
       if (!consumed) survivors.push(p);
     }
-    this.projectiles = survivors;
+    // finish() clears the list when an explosion ends the match mid-step.
+    this.projectiles = this.phase === 'gameover' ? [] : survivors;
   }
 
   private nearestEnemy(worm: Worm): Worm | null {

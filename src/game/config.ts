@@ -37,6 +37,9 @@ export const CHARGE_SECONDS = 1.1;
 /** Movement window after firing, before the turn passes. */
 export const RETREAT_SECONDS = 3;
 
+/** Free-flight span the dotted aim preview samples for weapons with no fuse or life. */
+export const PREVIEW_SECONDS = 3;
+
 export const WEAPONS: Record<WeaponId, WeaponDef> = {
   bazooka: {
     id: 'bazooka',

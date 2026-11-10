@@ -28,6 +28,7 @@ Every gameplay number lives in `src/game/config.ts`. Balance changes should neve
 | `AIM.radius` | 130 | px | the reticle never leaves this circle around the worm |
 | `CHARGE_SECONDS` | 1.1 | s | time from 0 to 100% power |
 | `RETREAT_SECONDS` | 3 | s | post-fire movement window before the turn passes |
+| `PREVIEW_SECONDS` | 3 | s | free-flight span the dotted aim preview samples when a weapon has no fuse or life |
 
 `WIND_ACCEL` maps the three wind settings to maximum wind units (`off: 0`, `light: 46`, `strong: 105`). Actual wind is re-rolled each turn in `[-max, +max]`, then applied to projectiles as `wind * windScale * 0.9` px/s².
 

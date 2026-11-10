@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { RETREAT_SECONDS, WEAPONS } from '../src/game/config';
 
 type Snapshot = {
   phase: string;
@@ -6,6 +7,7 @@ type Snapshot = {
   activeTeam: number;
   activeWormId: string;
   power: number;
+  charging: boolean;
   weapon: string;
   timeLeft: number;
   retreatLeft: number;
@@ -114,6 +116,83 @@ test('pause freezes the turn timer until resumed', async ({ page }) => {
   expect((await snapshot(page)).timeLeft).toBeLessThan(frozen);
 });
 
+test('the HUD stays inside the letterboxed arena on wide screens', async ({ page }) => {
+  await page.setViewportSize({ width: 1900, height: 940 });
+  await startMatch(page);
+
+  const bar = (1900 - (940 * 16) / 9) / 2;
+  const left = await page.getByTestId('btn-left').boundingBox();
+  expect(left!.x).toBeGreaterThanOrEqual(bar - 1);
+
+  const pause = await page.getByTestId('btn-pause').boundingBox();
+  expect(pause!.x + pause!.width).toBeLessThanOrEqual(1900 - bar + 1);
+});
+
+test('the fuse countdown shows the real fuse and scales its bar', async ({ page }) => {
+  await startMatch(page);
+  await page.getByTestId('weapon-dynamite').click();
+  await page.getByTestId('btn-fire').click();
+  await page.waitForFunction(() => {
+    const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
+    return state.fuseLeft !== null && state.fuseLeft > 1.5 && state.fuseLeft < 1.85;
+  });
+
+  // Pause freezes the fuse; the HUD gets one more push with the frozen value.
+  await page.getByTestId('btn-pause').click();
+
+  const fuse = (await snapshot(page)).fuseLeft!;
+  const total = WEAPONS.dynamite.fuse!;
+  await expect(page.getByTestId('hud-timer')).toHaveText(fuse.toFixed(1));
+
+  const expected = (fuse / total) * 100;
+  await expect
+    .poll(() =>
+      page
+        .getByTestId('hud-timer-fill')
+        .evaluate((el) => Number.parseFloat((el as HTMLElement).style.width)),
+    )
+    .toBeCloseTo(expected, 1);
+});
+
+test('the retreat countdown scales its bar by the retreat window, not the fuse', async ({ page }) => {
+  await startMatch(page);
+  await page.getByTestId('weapon-dynamite').click();
+  await page.getByTestId('btn-fire').click();
+  // Dynamite's fuse ends first, leaving an open retreat window with no fuse burning.
+  await page.waitForFunction(() => {
+    const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
+    return state.fuseLeft === null && state.retreatLeft > 0;
+  });
+  await page.getByTestId('btn-pause').click();
+
+  await expect
+    .poll(() =>
+      page.evaluate((retreatTotal) => {
+        const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
+        const bar = document.querySelector('[data-testid="hud-timer-fill"]') as HTMLElement;
+        return Math.abs(Number.parseFloat(bar.style.width) - (state.retreatLeft / retreatTotal) * 100);
+      }, RETREAT_SECONDS),
+    )
+    .toBeLessThan(0.5);
+});
+
+test('pausing cancels a charge instead of firing on release', async ({ page }) => {
+  await startMatch(page);
+  await page.keyboard.down('Space');
+  await page.waitForFunction(
+    () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().charging,
+  );
+
+  await page.getByTestId('btn-pause').click();
+  await page.keyboard.up('Space');
+
+  // The release happens under the pause card; nothing may fire.
+  const after = await snapshot(page);
+  expect(after.phase).toBe('aim');
+  expect(after.charging).toBe(false);
+  expect(after.power).toBe(0);
+});
+
 test('the shooter can retreat during the post-fire window', async ({ page }) => {
   await startMatch(page);
   await page.getByTestId('btn-fire').click();
@@ -138,6 +217,44 @@ test('the shooter can retreat during the post-fire window', async ({ page }) => 
     undefined,
     { timeout: 15000 },
   );
+});
+
+test('surrendering mid-flight leaves no frozen projectile', async ({ page }) => {
+  await startMatch(page);
+
+  // Fire and surrender in one tick: a UI click can resolve after the grenade
+  // already hit a worm, and then there is no in-flight shot left to check.
+  const after = await page.evaluate(() => {
+    const engine = (
+      window as never as {
+        __WORMAGE__: {
+          engine: {
+            weapon: string;
+            fire: () => void;
+            surrender: () => void;
+            projectilesInFlight: readonly unknown[];
+            snapshot: () => Snapshot;
+          };
+        };
+      }
+    ).__WORMAGE__.engine;
+    engine.weapon = 'grenade';
+    engine.fire();
+    const inFlightBefore = engine.projectilesInFlight.length;
+    engine.surrender();
+    const state = engine.snapshot();
+    return {
+      inFlightBefore,
+      phase: state.phase,
+      fuseLeft: state.fuseLeft,
+      inFlight: engine.projectilesInFlight.length,
+    };
+  });
+
+  expect(after.inFlightBefore).toBeGreaterThan(0);
+  expect(after.phase).toBe('gameover');
+  expect(after.inFlight).toBe(0);
+  expect(after.fuseLeft).toBeNull();
 });
 
 test('dynamite fuses down and explodes before the turn passes', async ({ page }) => {

@@ -1,6 +1,8 @@
 import {
+  AIM,
   BOUNCE,
   GRAVITY,
+  PREVIEW_SECONDS,
   PROJECTILE_GRAVITY,
   RETREAT_SECONDS,
   WATER_Y,
@@ -121,6 +123,43 @@ export function simulateShot(
     if (def.life !== null && t >= def.life) return { x, y, valid: true };
   }
   return { x, y, valid: false };
+}
+
+/**
+ * Sample a shot's path for the dotted aim preview. Each point runs the shared
+ * integrator up to its own slice of the weapon's horizon, so a fuse-less
+ * weapon traces an arc instead of collapsing every dot on its impact point.
+ */
+export function previewFlight(
+  terrain: AiTerrain,
+  startX: number,
+  startY: number,
+  angle: number,
+  power: number,
+  weapon: WeaponId,
+  wind: number,
+  steps = 16,
+): Array<{ x: number; y: number }> {
+  const def = WEAPONS[weapon];
+  const horizon = def.fuse ?? def.life ?? PREVIEW_SECONDS;
+  const points: Array<{ x: number; y: number }> = [];
+  for (let i = 1; i <= steps; i += 1) {
+    const point = simulateShot(
+      terrain,
+      startX,
+      startY,
+      angle,
+      power,
+      weapon,
+      wind,
+      (horizon * i) / steps,
+      def.bounces,
+    );
+    const previous = points[points.length - 1];
+    if (previous && Math.hypot(point.x - previous.x, point.y - previous.y) < 2) continue;
+    points.push({ x: point.x, y: point.y });
+  }
+  return points;
 }
 
 /**
@@ -396,7 +435,7 @@ export function clampAngle(angle: number): number {
   let a = angle;
   while (a > Math.PI) a -= Math.PI * 2;
   while (a < -Math.PI) a += Math.PI * 2;
-  return Math.min(-0.08, Math.max(-Math.PI + 0.08, a));
+  return Math.min(AIM.max, Math.max(AIM.min, a));
 }
 
 /** Keep the fall math shared between worms and projectiles. */
