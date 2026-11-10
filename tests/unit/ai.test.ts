@@ -5,10 +5,11 @@ import {
   clampAngle,
   firingPositions,
   planAiTurn,
+  planRopeClimb,
   previewFlight,
   simulateShot,
 } from '../../src/game/ai';
-import { AIM, JUMP_REACH, RETREAT_SECONDS, WEAPONS, WORM } from '../../src/game/config';
+import { AIM, JUMP_REACH, RETREAT_SECONDS, ROPE, WEAPONS, WORM } from '../../src/game/config';
 import { terrain } from './terrainFixture';
 
 test('reticle sits on the fixed-radius circle in open air', () => {
@@ -76,6 +77,64 @@ test('AI firing positions never require more than one jump', () => {
   for (const position of positions) {
     expect(500 - position.y).toBeLessThanOrEqual(JUMP_REACH);
   }
+});
+
+test('AI firing positions keep the ground under a shelf', () => {
+  const shelf = {
+    isSolid: (x: number, y: number) => y >= 500 || (x >= 300 && x <= 500 && y >= 300 && y <= 340),
+    groundY: (x: number, fromY: number, maxDown = 260) => {
+      const shelfTop = x >= 300 && x <= 500 ? 300 : 500;
+      if (fromY <= shelfTop && fromY + maxDown >= shelfTop) return shelfTop;
+      if (fromY <= 500 && fromY + maxDown >= 500) return 500;
+      return null;
+    },
+  };
+  const positions = firingPositions(shelf, { id: 'a', teamId: 0, x: 400, y: 500 }, 0, ROPE.range);
+
+  expect(positions.some((position) => position.x === 400 && position.y === 500)).toBe(true);
+  expect(positions.some((position) => position.x === 400 && position.y === 300)).toBe(false);
+});
+
+test('rope reach expands AI firing positions to high ledges', () => {
+  const ledge = {
+    isSolid: (x: number, y: number) => y >= (x >= 460 ? 420 : 500),
+    groundY: (x: number, fromY: number, maxDown = 260) => {
+      const top = x >= 460 ? 420 : 500;
+      const start = Math.max(top, Math.ceil(fromY / 4) * 4);
+      return start <= fromY + maxDown ? start : null;
+    },
+  };
+  const positions = firingPositions(ledge, { id: 'a', teamId: 0, x: 400, y: 500 }, 400, ROPE.range);
+
+  expect(positions.some((position) => position.y === 420)).toBe(true);
+  expect(positions.every((position) => 500 - position.y <= ROPE.range)).toBe(true);
+});
+
+test('the AI finds a rope anchor above a ledge it cannot jump', () => {
+  const wall = {
+    isSolid: (_x: number, y: number) => y >= 500 || _x >= 520,
+    groundY: (_x: number, fromY: number, maxDown = 260) =>
+      fromY <= 500 && fromY + maxDown >= 500 ? 500 : null,
+  };
+
+  const plan = planRopeClimb(wall, { id: 'a', teamId: 0, x: 400, y: 500 }, 520, 420);
+
+  expect(plan).not.toBeNull();
+  expect(plan!.anchorX).toBeGreaterThanOrEqual(520);
+  expect(plan!.anchorY).toBeLessThanOrEqual(400);
+  expect(plan!.length).toBeLessThanOrEqual(ROPE.range);
+});
+
+test('the AI finds no rope anchor in open air or beyond range', () => {
+  const open = { isSolid: () => false, groundY: () => null };
+  expect(planRopeClimb(open, { id: 'a', teamId: 0, x: 400, y: 500 }, 520, 420)).toBeNull();
+
+  const farWall = {
+    isSolid: (x: number, y: number) => y >= 500 || x >= 900,
+    groundY: (_x: number, fromY: number, maxDown = 260) =>
+      fromY <= 500 && fromY + maxDown >= 500 ? 500 : null,
+  };
+  expect(planRopeClimb(farWall, { id: 'a', teamId: 0, x: 400, y: 500 }, 900, 420)).toBeNull();
 });
 
 const impactOf = (turn: NonNullable<ReturnType<typeof plan>>, targetX: number) => {

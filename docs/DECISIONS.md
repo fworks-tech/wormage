@@ -128,3 +128,10 @@ After a successful fullscreen request on `/demo`, the page asks for a landscape 
 
 **Why:** fullscreen is the immersive presentation, and the HUD already has a dedicated landscape-phone layout (`max-height: 480px`). The portrait layout from #59 stays available by leaving fullscreen.
 **Cost:** on Android a fullscreen match rotates even if the player prefers portrait; the way out is exiting fullscreen. iOS players rotate manually, because Safari ignores the lock.
+
+## 19. The rope is a tool, not a weapon
+
+The anchored rope is a per-worm tool with its own pendulum state, no ammo slot and no `WeaponDef`. It hangs from the first terrain point on the aim ray; gravity, swing input and reel input drive it in the fixed step, and Jump releases the momentum.
+
+**Why:** every worm should be able to traverse, the rope never damages anything, and keeping it out of `WEAPONS` avoids inventing damage/fuse fields that would never be read.
+**Cost:** it needs its own state (`Worm.rope`), HUD card and renderer line, and the AI needs a bounded climb attempt with a shoot-from-here fallback.

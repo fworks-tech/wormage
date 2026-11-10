@@ -65,6 +65,7 @@ Destruction (`Terrain.carve`) zeroes the mask circle, then fires `onCarve`. The 
 
 - Gravity: worms 780 px/s², projectiles 520 px/s² scaled per weapon.
 - A jump starts only from the ground; there is no double jump. Holding a direction while airborne sets horizontal velocity, so a vertical hop can be steered sideways over a ledge.
+- The anchored rope hangs the worm from the first terrain point on the aim ray. Its angle is a damped pendulum driven by gravity and A/D; W/S changes the length. Jump releases the rope with the pendulum velocity, so a swing carries into the fall.
 - Wind: `-max..max` units per ruleset, applied as horizontal acceleration scaled per weapon (`windScale`); the AI and the aim preview use the same value.
 - Aiming is an absolute world angle stored in `[AIM.min, AIM.max]` (`-3.04` to `-0.1`); facing is derived from `cos(angle)`. Walking flips the angle with `mirrorAngle` so the barrel stays on the leading side.
 - Damage falls off linearly with distance, floored at 22% of the weapon's base damage inside the blast radius.
@@ -90,7 +91,7 @@ The projectile and settle phases also run a 3 s retreat window (`RETREAT_SECONDS
 
 `planAiTurn` plans the whole turn. It builds walkable firing positions within the part of the turn it can spend walking, then evaluates bazooka, grenade, shotgun and dynamite from each one by running the **real** projectile integrator (`simulateShot`). The simulation stops at the first worm in the flight path, so an ally in the way is scored as friendly damage instead of an open shot. A shot is scored by damage to enemies minus a penalty for friendly and self damage; dynamite is only considered when the worm can leave its blast before the 2.2 s fuse ends. The plan also picks a retreat spot within the 3 s window, away from the enemy, outside that blast and reachable on foot — walls, pits and water between the worm and the spot disqualify it.
 
-Firing positions are limited to ground within one jump of the worm's feet (`JUMP_REACH`); a ledge the worm cannot climb is not a candidate. The engine walks the AI worm to `fireX`, fires the chosen weapon, then steers the same worm to `retreatX` while the retreat window is open. If the path is blocked or the turn clock runs low, it falls back to the legacy `planAiShot` bazooka solution from where it stands. Difficulty jitter is applied to projectile angle and power; a dynamite drop has neither.
+Firing positions are limited to ground within rope reach. When the spot is higher than one jump (`JUMP_REACH`), the AI attaches a rope to an anchor above it, reels and swings toward `fireX`, and lets go over the ledge; a four-second window bounds the attempt. The engine then walks the AI worm to `fireX`, fires the chosen weapon, and steers it to `retreatX` while the retreat window is open. If the path is blocked, the rope finds nothing, or the turn clock runs low, it falls back to the legacy `planAiShot` bazooka solution from where it stands. Difficulty jitter is applied to projectile angle and power; a dynamite drop has neither.
 
 Because the solver and the game share one integrator, the CPU never "cheats" — it just searches better than a human can. The player's aim preview uses the same function for the dotted arc, while the reticle itself is the bounded aim indicator from `aim.ts` (not an impact prediction).
 
@@ -98,7 +99,7 @@ Because the solver and the game share one integrator, the CPU never "cheats" —
 
 `ArenaRenderer` builds, in order: sky canvas (gradient, sun, hills, water reflection), water graphics, terrain sprite, projectile graphics, worms, FX, aim layer, vignette and drifting clouds.
 
-- Worms are `Graphics` built once per worm, with a redrawn HP bar only when HP or active state changes.
+- Worms are `Graphics` built once per worm, with a redrawn HP bar only when HP or active state changes. The rope is a single line from the chest to the anchor, drawn in the aim layer; the aim preview hides while the worm is attached.
 - Particles are plain objects integrated in `render` and drawn into a single cleared `Graphics` per frame (sparks, smoke, dirt, splashes, shockwave rings), capped at 420.
 - Screen shake decays exponentially and offsets the world container only, never the HUD.
 - The world is 1280 × 720 and letterboxed: `scale = min(screenW / 1280, screenH / 720)`. `toWorld()` inverts that transform for pointer input, so aiming stays accurate at any window size or device pixel ratio.

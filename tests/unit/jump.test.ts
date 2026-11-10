@@ -141,12 +141,20 @@ describe('jump physics', () => {
     worm.fallDistance = 0;
 
     const internals = engine as unknown as {
-      aiPlan: { weapon: 'bazooka'; fireX: number; angle: number; power: number; retreatX: number } | null;
+      aiPlan: {
+        weapon: 'bazooka';
+        fireX: number;
+        fireY: number;
+        angle: number;
+        power: number;
+        retreatX: number;
+      } | null;
       aiThinking: boolean;
     };
     internals.aiPlan = {
       weapon: 'bazooka',
       fireX: 500,
+      fireY: 420,
       angle: -0.5,
       power: 0.5,
       retreatX: worm.x,
@@ -175,12 +183,20 @@ describe('jump physics', () => {
     worm.fallDistance = 0;
 
     const internals = engine as unknown as {
-      aiPlan: { weapon: 'bazooka'; fireX: number; angle: number; power: number; retreatX: number } | null;
+      aiPlan: {
+        weapon: 'bazooka';
+        fireX: number;
+        fireY: number;
+        angle: number;
+        power: number;
+        retreatX: number;
+      } | null;
       aiThinking: boolean;
     };
     internals.aiPlan = {
       weapon: 'bazooka',
       fireX: 500,
+      fireY: 500,
       angle: -0.5,
       power: 0.5,
       retreatX: worm.x,
@@ -209,12 +225,20 @@ describe('jump physics', () => {
 
     // A plan beyond the wall forces the AI to walk into it and stall.
     const internals = engine as unknown as {
-      aiPlan: { weapon: 'bazooka'; fireX: number; angle: number; power: number; retreatX: number } | null;
+      aiPlan: {
+        weapon: 'bazooka';
+        fireX: number;
+        fireY: number;
+        angle: number;
+        power: number;
+        retreatX: number;
+      } | null;
       aiThinking: boolean;
     };
     internals.aiPlan = {
       weapon: 'bazooka',
       fireX: blockedX + 100,
+      fireY: 500,
       angle: -0.5,
       power: 0.5,
       retreatX: worm.x,

@@ -12,6 +12,8 @@ export type GameAction =
   | { type: 'move'; dir: -1 | 0 | 1 }
   | { type: 'aim'; delta: number }
   | { type: 'jump'; dir?: -1 | 0 | 1 }
+  | { type: 'rope' }
+  | { type: 'reel'; dir: -1 | 0 | 1 }
   | { type: 'weapon'; id: WeaponId }
   | { type: 'startCharge' }
   | { type: 'releaseCharge' }
@@ -65,6 +67,15 @@ export interface WeaponDef {
   blurb: string;
 }
 
+/** A hanging rope. `angle` is measured from straight down; the pivot is the chest. */
+export interface RopeState {
+  anchorX: number;
+  anchorY: number;
+  length: number;
+  angle: number;
+  angularVelocity: number;
+}
+
 export interface Worm {
   id: string;
   name: string;
@@ -82,6 +93,7 @@ export interface Worm {
   onGround: boolean;
   fallDistance: number;
   airborne: boolean;
+  rope: RopeState | null;
 }
 
 export interface Team {
@@ -117,6 +129,7 @@ export type GameEvent =
   | { type: 'splash'; x: number; y: number }
   | { type: 'bounce'; x: number; y: number }
   | { type: 'jump'; x: number; y: number }
+  | { type: 'rope'; x: number; y: number }
   | { type: 'turn'; teamId: number; wormId: string }
   | { type: 'gameover'; winnerTeamId: number | null }
   | { type: 'shotgun'; x: number; y: number; angle: number }
@@ -165,6 +178,8 @@ export interface GameSnapshot {
   retreatLeft: number;
   /** Whether the active worm is standing on terrain (jumping is only legal from the ground). */
   activeOnGround: boolean;
+  /** Whether the active worm is hanging from a rope. */
+  ropeAttached: boolean;
   /** Shortest lit fuse among projectiles in flight, or null. */
   fuseLeft: number | null;
 }

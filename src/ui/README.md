@@ -18,7 +18,7 @@ React renders menus, dialogs and the in-match HUD. It never owns gameplay state.
 - **Snapshot in, callbacks out.** Components receive a `GameSnapshot` and call `onAction` props; they never import the engine.
 - **No per-frame renders.** `GameView` pushes snapshots at ~10 Hz. If a new value must be shown, add it to `GameSnapshot` rather than reading the engine from a component.
 - **Accessibility is part of the UI.** Buttons have labels, the pause dialog is `aria-modal`, the HUD exposes a polite live region with turn/seconds, and keyboard focus is visible.
-- **Touch and mouse share handlers.** Pointer events drive movement pads, aim pads, charge/fire, jump/flip and the drag-to-aim canvas gesture. On touch a tap only aims, a drag past 8 px fires, and `pointercancel` cancels instead of firing.
+- **Touch and mouse share handlers.** Pointer events drive movement pads, aim/reel pads, charge/fire, jump/air steer, the rope card and the drag-to-aim canvas gesture. On touch a tap only aims, a drag past 8 px fires, and `pointercancel` cancels instead of firing.
 
 ## Where to change what
 

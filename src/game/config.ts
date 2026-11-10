@@ -19,6 +19,8 @@ export const WIND_ACCEL: Record<WindSetting, number> = {
 export const AI = {
   /** How long a blocked AI walk may keep jumping before it shoots from where it stands. */
   jumpWindowSeconds: 6,
+  /** How long the AI may try to climb a ledge with the rope before it gives up. */
+  ropeWindowSeconds: 4,
 } as const;
 
 export const WORM = {
@@ -34,6 +36,18 @@ export const WORM = {
 
 /** Peak height of a jump, derived so planning and physics cannot drift. */
 export const JUMP_REACH = (WORM.jumpVelocity * WORM.jumpVelocity) / (2 * GRAVITY);
+
+/** Anchored rope. `angle` is measured from straight down; `range` is also the max length. */
+export const ROPE = {
+  range: 220,
+  minLength: 24,
+  reelSpeed: 130,
+  /** Angular acceleration from holding left/right, in rad/s². */
+  swingAccel: 3.5,
+  /** Per-step damping, so a swing eventually settles. */
+  damping: 0.999,
+  maxAngularSpeed: 4,
+} as const;
 
 export const AIM = {
   min: -3.04,

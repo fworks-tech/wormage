@@ -9,6 +9,8 @@ interface HudProps {
   onAim: (dir: -1 | 1) => void;
   onAimStop: () => void;
   onJump: () => void;
+  onRope: () => void;
+  onReel: (dir: -1 | 0 | 1) => void;
   onChargeStart: () => void;
   onChargeEnd: () => void;
   onChargeCancel: () => void;
@@ -34,6 +36,8 @@ export function Hud({
   onAim,
   onAimStop,
   onJump,
+  onRope,
+  onReel,
   onChargeStart,
   onChargeEnd,
   onChargeCancel,
@@ -47,8 +51,12 @@ export function Hud({
 
   const playerTurn = snapshot.activeTeam === 0 && snapshot.phase === 'aim' && !paused;
   const canSteer = snapshot.activeTeam === 0 && !paused && (snapshot.phase === 'aim' || snapshot.retreatLeft > 0);
-  const canAim = snapshot.activeTeam === 0 && snapshot.phase === 'aim' && !paused;
-  const canJump = snapshot.activeTeam === 0 && snapshot.phase !== 'gameover' && !paused && snapshot.activeOnGround;
+  const ropeAttached = snapshot.ropeAttached;
+  const canAim = playerTurn && !ropeAttached;
+  const canReel = canSteer && ropeAttached;
+  const canJump =
+    snapshot.activeTeam === 0 && snapshot.phase !== 'gameover' && !paused && (snapshot.activeOnGround || ropeAttached);
+  const canRope = canSteer;
   const myTeam = snapshot.teams[0];
   const enemy = snapshot.teams[1];
   const weapon = WEAPONS[snapshot.weapon];
@@ -83,6 +91,7 @@ export function Hud({
   const disarm = () => {
     onMove(0);
     onAimStop();
+    onReel(0);
   };
 
   return (
@@ -197,19 +206,26 @@ export function Hud({
               type="button"
               className="pad-btn pad-btn-small"
               aria-label="Aim up"
-              disabled={!playerTurn}
+              disabled={!canAim && !canReel}
               onPointerDown={() => {
+                if (ropeAttached) {
+                  onReel(-1);
+                  return;
+                }
                 holdAimUp.current = true;
                 onAim(1);
               }}
               onPointerUp={() => {
                 holdAimUp.current = false;
+                onReel(0);
               }}
               onPointerLeave={() => {
                 holdAimUp.current = false;
+                onReel(0);
               }}
               onPointerCancel={() => {
                 holdAimUp.current = false;
+                onReel(0);
               }}
             >
               ▲
@@ -218,19 +234,26 @@ export function Hud({
               type="button"
               className="pad-btn pad-btn-small"
               aria-label="Aim down"
-              disabled={!playerTurn}
+              disabled={!canAim && !canReel}
               onPointerDown={() => {
+                if (ropeAttached) {
+                  onReel(1);
+                  return;
+                }
                 holdAimDown.current = true;
                 onAim(-1);
               }}
               onPointerUp={() => {
                 holdAimDown.current = false;
+                onReel(0);
               }}
               onPointerLeave={() => {
                 holdAimDown.current = false;
+                onReel(0);
               }}
               onPointerCancel={() => {
                 holdAimDown.current = false;
+                onReel(0);
               }}
             >
               ▼
@@ -259,11 +282,11 @@ export function Hud({
             disabled={!canJump}
             data-testid="btn-jump"
           >
-            Jump
+            {ropeAttached ? 'Let go' : 'Jump'}
           </button>
         </div>
 
-        <div className="weapon-dock" role="group" aria-label="Weapons">
+        <div className="weapon-dock" role="group" aria-label="Weapons and rope">
           {WEAPON_ORDER.map((id) => {
             const def = WEAPONS[id];
             const count = myTeam?.ammo[id] ?? 0;
@@ -274,7 +297,7 @@ export function Hud({
                 type="button"
                 className={`weapon-card ${snapshot.weapon === id ? 'weapon-active' : ''}`}
                 onClick={() => onSelectWeapon(id)}
-                disabled={!playerTurn || out}
+                disabled={!playerTurn || out || ropeAttached}
                 data-testid={`weapon-${id}`}
                 title={def.blurb}
               >
@@ -284,6 +307,19 @@ export function Hud({
               </button>
             );
           })}
+          <button
+            type="button"
+            className={`weapon-card rope-card ${ropeAttached ? 'weapon-active' : ''}`}
+            onClick={onRope}
+            disabled={!canRope || snapshot.charging}
+            aria-pressed={ropeAttached}
+            data-testid="btn-rope"
+            title="Anchor to the aimed terrain; A/D swing, W/S reel, J lets go"
+          >
+            <span className="weapon-glyph">⌁</span>
+            <span className="weapon-name">Rope</span>
+            <span className="weapon-ammo">∞</span>
+          </button>
         </div>
 
         <div className="action-cluster">
@@ -304,7 +340,7 @@ export function Hud({
             type="button"
             className="fire-btn"
             data-testid="btn-fire"
-            disabled={!playerTurn}
+            disabled={!playerTurn || ropeAttached}
             onPointerDown={(e) => {
               if (firePointer.current !== null) return;
               firePointer.current = e.pointerId;

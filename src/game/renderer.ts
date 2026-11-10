@@ -154,6 +154,7 @@ export class ArenaRenderer {
   private readonly terrainSprite: Sprite;
   private readonly water = new Graphics();
   private readonly aim = new Graphics();
+  private readonly rope = new Graphics();
   private readonly fx = new Graphics();
   private readonly clouds: Container[] = [];
   private readonly wormViews = new Map<string, WormView>();
@@ -191,6 +192,7 @@ export class ArenaRenderer {
 
     this.fxLayer.addChild(this.fx);
     this.aimLayer.addChild(this.aim);
+    this.aimLayer.addChild(this.rope);
 
     for (const team of engine.teams) {
       for (const worm of team.worms) {
@@ -411,6 +413,10 @@ export class ArenaRenderer {
         this.burst(event.x, event.y, 5, 0xbba06f, 60, 'circle', 0.3);
         break;
       }
+      case 'rope': {
+        this.burst(event.x, event.y, 5, 0xbba06f, 60, 'circle', 0.3);
+        break;
+      }
       default:
         break;
     }
@@ -568,6 +574,7 @@ export class ArenaRenderer {
       }
     }
 
+    this.drawRope(paused);
     this.drawAim(snapshot, dt, paused);
     this.drawFx(dt, paused);
     this.drawWater();
@@ -606,10 +613,26 @@ export class ArenaRenderer {
     return g;
   }
 
+  private drawRope(paused: boolean): void {
+    this.rope.clear();
+    if (paused) return;
+    for (const team of this.engine.teams) {
+      for (const worm of team.worms) {
+        if (!worm.rope) continue;
+        this.rope
+          .moveTo(worm.x, worm.y - 14)
+          .lineTo(worm.rope.anchorX, worm.rope.anchorY)
+          .stroke({ width: 2, color: 0xe8d6b0, alpha: 0.9 });
+        this.rope.circle(worm.rope.anchorX, worm.rope.anchorY, 3).fill(0xffe08a);
+      }
+    }
+  }
+
   private drawAim(snapshot: GameSnapshot, dt: number, paused: boolean): void {
     this.aim.clear();
     const activeWorm = this.engine.activeWorm;
     if (!activeWorm || snapshot.phase !== 'aim' || paused) return;
+    if (activeWorm.rope) return;
     const weapon = WEAPONS[snapshot.weapon];
     const power = Math.max(0.14, snapshot.power);
     const angle = activeWorm.aimAngle;

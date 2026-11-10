@@ -6,6 +6,7 @@ import {
   PREVIEW_SECONDS,
   PROJECTILE_GRAVITY,
   RETREAT_SECONDS,
+  ROPE,
   WATER_Y,
   WEAPON_ORDER,
   WEAPONS,
@@ -42,6 +43,7 @@ export interface AiTurnPlan {
   weapon: WeaponId;
   /** Where the worm should stand before firing. */
   fireX: number;
+  fireY: number;
   angle: number;
   power: number;
   /** Where the worm should walk once the shot is away. */
@@ -225,9 +227,10 @@ export function planAiTurn(input: AiTurnInput): AiTurnPlan | null {
 
   // Do not spend the whole turn walking: leave time to aim and fire.
   const moveBudget = Math.min(5, Math.max(0, timeLeft - 2)) * WORM.walkSpeed;
-  const positions = firingPositions(terrain, worm, moveBudget);
+  // The rope extends the AI's climb beyond a jump.
+  const positions = firingPositions(terrain, worm, moveBudget, ROPE.range);
 
-  let best: (Candidate & { weapon: WeaponId; fireX: number }) | null = null;
+  let best: (Candidate & { weapon: WeaponId; fireX: number; fireY: number }) | null = null;
 
   for (const weapon of WEAPON_ORDER) {
     const def = WEAPONS[weapon];
@@ -240,7 +243,9 @@ export function planAiTurn(input: AiTurnInput): AiTurnPlan | null {
       if (!candidate) continue;
       // Prefer a short walk when two plans do the same damage.
       candidate.score -= (Math.abs(pos.x - worm.x) / WORM.walkSpeed) * 0.4;
-      if (!best || candidate.score > best.score) best = { ...candidate, weapon, fireX: pos.x };
+      if (!best || candidate.score > best.score) {
+        best = { ...candidate, weapon, fireX: pos.x, fireY: pos.y };
+      }
     }
   }
 
@@ -254,13 +259,66 @@ export function planAiTurn(input: AiTurnInput): AiTurnPlan | null {
   return {
     weapon: best.weapon,
     fireX: best.fireX,
+    fireY: best.fireY,
     angle: clampAngle(best.angle + jitterAngle),
     power: Math.min(1, Math.max(0.25, best.power + jitterPower)),
     retreatX: best.retreatX,
   };
 }
 
-export function firingPositions(terrain: AiTerrain, worm: AiWorm, budget: number): Array<{ x: number; y: number }> {
+export interface RopeClimbPlan {
+  angle: number;
+  anchorX: number;
+  anchorY: number;
+  length: number;
+}
+
+/**
+ * Pick an aim angle whose ray hits terrain above `targetY`, so the CPU can
+ * rope over a ledge that is higher than a jump.
+ */
+export function planRopeClimb(
+  terrain: AiTerrain,
+  worm: AiWorm,
+  targetX: number,
+  targetY: number,
+  range = ROPE.range,
+): RopeClimbPlan | null {
+  const originY = worm.y - 14;
+  const facingRight = targetX >= worm.x;
+  const base = facingRight ? 0 : -Math.PI;
+  const mirror = facingRight ? -1 : 1;
+  let best: (RopeClimbPlan & { score: number }) | null = null;
+
+  for (let offset = 0.25; offset <= 1.45; offset += 0.05) {
+    const angle = clampAngle(base + mirror * offset);
+    const dirX = Math.cos(angle);
+    const dirY = Math.sin(angle);
+    for (let distance = 12; distance <= range; distance += 4) {
+      const x = worm.x + dirX * distance;
+      const y = originY + dirY * distance;
+      if (!terrain.isSolid(x, y)) continue;
+      // The anchor must sit above the landing surface and above the worm.
+      if (y > targetY - 20 || y > worm.y - 30) break;
+      const score = Math.abs(x - targetX) + Math.max(0, targetY - 20 - y) * 0.15;
+      if (!best || score < best.score) {
+        best = { angle, anchorX: x, anchorY: y, length: distance, score };
+      }
+      break;
+    }
+  }
+
+  return best
+    ? { angle: best.angle, anchorX: best.anchorX, anchorY: best.anchorY, length: best.length }
+    : null;
+}
+
+export function firingPositions(
+  terrain: AiTerrain,
+  worm: AiWorm,
+  budget: number,
+  maxClimb = JUMP_REACH,
+): Array<{ x: number; y: number }> {
   const xs = new Set<number>([worm.x]);
   for (let offset = 50; offset <= budget + 50; offset += 50) {
     xs.add(worm.x - offset);
@@ -268,16 +326,23 @@ export function firingPositions(terrain: AiTerrain, worm: AiWorm, budget: number
   }
 
   const positions: Array<{ x: number; y: number }> = [];
-  // Start above the highest pixel a jump can reach; a column that is already
-  // solid there is a cliff the worm cannot climb.
-  const scanTop = Math.max(0, worm.y - JUMP_REACH - 12);
+  // Start above the highest pixel the worm can climb; a column that is already
+  // solid there is a cliff beyond reach.
+  const scanTop = Math.max(0, worm.y - maxClimb - 12);
   for (const rawX of xs) {
     if (rawX < 20 || rawX > WORLD_W - 20) continue;
     const x = Math.round(rawX / 4) * 4;
-    const ground = terrain.groundY(x, scanTop, WATER_Y - scanTop);
-    // Walkable ground only: no water, no cliff above jump reach, no damaging drop.
-    if (ground === null || ground > WATER_Y - 30) continue;
-    if (worm.y - ground > JUMP_REACH || ground - worm.y > WORM.fallSafePx) continue;
+    const top = terrain.groundY(x, scanTop, WATER_Y - scanTop);
+    if (top === null || top > WATER_Y - 30) continue;
+    // A shelf above the worm is not the ground it walks on; keep the surface
+    // below its feet when the column at the top is an overhang.
+    let ground = top;
+    if (top < worm.y - 8) {
+      const under = terrain.groundY(x, worm.y - 18, WATER_Y - (worm.y - 18));
+      if (under !== null && under >= worm.y - 8 && under <= WATER_Y - 30) ground = under;
+    }
+    // Walkable ground only: no water, no cliff above reach, no damaging drop.
+    if (worm.y - ground > maxClimb || ground - worm.y > WORM.fallSafePx) continue;
     positions.push({ x, y: ground });
   }
   return positions.sort((a, b) => Math.abs(a.x - worm.x) - Math.abs(b.x - worm.x));
