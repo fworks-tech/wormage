@@ -39,9 +39,12 @@ class WormView {
   private lastFacing = 1;
   private lastHp = -1;
   private lastActive = false;
+  private spin = 0;
   private bob = Math.random() * Math.PI * 2;
 
   constructor(worm: Worm, color: number, name: string) {
+    this.body.pivot.set(0, -15);
+    this.body.position.set(0, -15);
     this.root.addChild(this.body);
     this.root.addChild(this.bar);
     this.root.addChild(this.marker);
@@ -96,6 +99,10 @@ class WormView {
   sync(worm: Worm, color: number, active: boolean, canAct: boolean, dt: number): void {
     this.root.position.set(worm.x, worm.y);
     this.bob += dt * 4;
+    // A flip reads as a spin around the body centre; landing snaps it upright.
+    if (worm.airborne) this.spin += dt * (worm.vx >= 0 ? 10 : -10);
+    else this.spin = 0;
+    this.body.rotation = this.spin;
     if (worm.facing !== this.lastFacing) this.drawWorm(color, worm.facing);
     this.root.alpha = worm.alive ? 1 : 0;
     this.root.visible = worm.alive;
