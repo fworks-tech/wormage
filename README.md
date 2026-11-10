@@ -47,6 +47,8 @@ npm run test:e2e       # Playwright (uses installed Chrome)
 
 `/` redirects to `/demo`, where a New Game dialog starts the match; `/project` is this informational page. The single-file build has no real routes — open it at `/`, it starts on the demo screen, and the dialog hides the project link.
 
+On iOS, Share → Add to Home Screen launches Wormage without Safari's chrome (manifest and icons in `public/`). Android Chrome needs the M6 service worker for a true installed app; until then Add to Home screen makes a shortcut.
+
 ## How to play
 
 | Action | Keyboard | Touch |
