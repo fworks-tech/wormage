@@ -35,6 +35,11 @@ const WORM_NAMES = [
   ['Crank', 'Nyx', 'Dust'],
 ];
 
+/** Blast damage at a distance: linear falloff, floored at 22% inside the radius. */
+export function blastFalloff(distance: number, radius: number): number {
+  return Math.max(0.22, 1 - distance / radius);
+}
+
 export class GameEngine {
   readonly config: MatchConfig;
   readonly terrain: Terrain;
@@ -359,8 +364,7 @@ export class GameEngine {
         const dy = worm.y - 13 - y;
         const distance = Math.hypot(dx, dy);
         if (distance > def.radius + WORM.radius) continue;
-        const falloff = Math.max(0.22, 1 - distance / (def.radius + WORM.radius));
-        this.hurt(worm, def.damage * falloff, x, y, sourceTeam);
+        this.hurt(worm, def.damage * blastFalloff(distance, def.radius + WORM.radius), x, y, sourceTeam);
       }
     }
   }
