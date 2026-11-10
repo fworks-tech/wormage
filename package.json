@@ -11,6 +11,7 @@
     "build:single": "tsc --noEmit && vite build --mode single",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:affected": "node scripts/affected.mjs --base origin/main --run",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit"
   },

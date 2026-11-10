@@ -5,12 +5,30 @@
 ```bash
 npm test                         # Vitest, Node, no browser
 npm run test:e2e                 # Playwright, both projects
+npm run test:affected            # only the tests origin/main + your worktree can reach
 npx playwright test --project=desktop
 npx playwright test tests/combat.spec.ts -g "firing"
 npx playwright show-report       # HTML report
 ```
 
 Vitest only picks up `tests/unit/**/*.test.ts`. The Playwright config uses `channel: 'chrome'` so no browser download is required, and starts/reuses the Vite dev server on `http://localhost:5173`.
+
+## CI test selection
+
+Pull requests run only the tests their diff can reach; pushes to `main` run everything. The map lives in [`scripts/affected.mjs`](../scripts/affected.mjs): add a rule when a new spec needs a new source area, otherwise that spec only runs when the spec file itself changes. Unmapped paths fall back to the full suite. Add the `ci:full` label to force it.
+
+```bash
+npm run test:affected   # runs the selection (uncommitted and untracked files included)
+node scripts/affected.mjs --base origin/main   # print the selection without running it
+```
+
+The same script runs in CI with the PR base commit, so local and CI agree. To run it before every push, opt in once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+`git push --no-verify` skips the hook.
 
 ## Instrumentation
 

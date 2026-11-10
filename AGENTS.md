@@ -30,6 +30,7 @@ npm ci
 npm run dev            # http://localhost:5173, starts MSW
 npm run typecheck
 npm test               # Vitest, Node, no browser
+npm run test:affected  # only the tests origin/main + your worktree can reach
 npm run build
 npm run build:single   # one self-contained HTML file (no service worker)
 npm run test:e2e       # Playwright, desktop + mobile

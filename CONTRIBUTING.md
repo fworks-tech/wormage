@@ -11,6 +11,8 @@ npm run typecheck
 npm test               # Vitest unit tests
 npm run build
 npm run test:e2e       # uses installed Chrome
+npm run test:affected  # only the tests origin/main + your worktree can reach
+git config core.hooksPath .githooks   # optional: run test:affected before each push
 ```
 
 Node 20+ is required.
@@ -27,7 +29,7 @@ Node 20+ is required.
    - `test/deterministic-replay`
 3. **Commit with Conventional Commits.** The type matches the branch type; the scope is optional and names the area.
 4. **Open one PR per issue.** Link it with `Closes #N`. Keep unrelated changes out.
-5. **Do not merge without review.** A PR needs an approving review and a green CI run — typecheck, build and Playwright on desktop and mobile.
+5. **Do not merge without review.** A PR needs an approving review and a green CI run — typecheck, build and the tests the change affects (pushes to `main` run the full suite).
 
 ### Stacked PRs
 
