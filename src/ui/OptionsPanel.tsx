@@ -157,3 +157,5 @@ export function OptionsPanel({ settings, onSave, onClose }: OptionsPanelProps) {
     </div>
   );
 }
+
+// temp: exercise the selective CI path
