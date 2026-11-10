@@ -16,8 +16,11 @@ type Snapshot = {
 };
 
 type TerrainHandle = {
-  canvas: HTMLCanvasElement;
   carve: (x: number, y: number, radius: number) => void;
+};
+
+type PainterHandle = {
+  canvas: HTMLCanvasElement;
 };
 
 const startMatch = async (page: import('@playwright/test').Page) => {
@@ -320,11 +323,14 @@ test('ending the turn switches sides without damage', async ({ page }) => {
 
 test('carving terrain punches a hole in the canvas instead of tinting it', async ({ page }) => {
   await startMatch(page);
+  await page.waitForFunction(
+    () => Boolean((window as never as { __WORMAGE__: { painter?: unknown } }).__WORMAGE__.painter),
+  );
   const alpha = await page.evaluate(() => {
-    const terrain = (window as never as { __WORMAGE__: { engine: { terrain: TerrainHandle } } }).__WORMAGE__.engine
-      .terrain;
-    terrain.carve(640, 560, 40);
-    const ctx = terrain.canvas.getContext('2d');
+    const state = (window as never as { __WORMAGE__: { engine: { terrain: TerrainHandle }; painter: PainterHandle } })
+      .__WORMAGE__;
+    state.engine.terrain.carve(640, 560, 40);
+    const ctx = state.painter.canvas.getContext('2d');
     if (!ctx) throw new Error('2D canvas is not available');
     const alphaAt = (x: number, y: number) => ctx.getImageData(x, y, 1, 1).data[3];
     return { crater: alphaAt(640, 560), ground: alphaAt(640, 660) };

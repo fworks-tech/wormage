@@ -56,7 +56,7 @@ Playwright uses the installed Chrome (`channel: 'chrome'`); do not download brow
 ## Invariants
 
 - **Engine owns the truth.** The renderer only reads. React gets throttled snapshots (~10 Hz) and calls engine actions through refs; it never mutates worms or projectiles.
-- **The simulation stays renderer-free.** `src/game/` imports no React; only `terrain.ts` and `renderer.ts` may touch a DOM canvas.
+- **The simulation stays renderer-free.** `src/game/` imports no React; only `terrain-painter.ts` and `renderer.ts` may touch a DOM canvas.
 - **One physics source.** AI and the aim preview run `simulateShot`; combat integrates with the same constants in `config.ts`. Never re-declare speeds, gravity or wind scales in another file.
 - **Numbers live in `config.ts`.** Balance changes should not touch `engine.ts`, the renderer or React.
 - **Weapons are data.** Add a `WeaponDef` to `WEAPONS` and `WEAPON_ORDER`; keep its physics in the same shape as the others.

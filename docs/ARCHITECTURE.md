@@ -19,7 +19,7 @@ Wormage is a single-page React app wrapped around a self-contained PixiJS game. 
 └──────────────────────────────────────────────┘
 ```
 
-- `src/game/*` imports nothing from React or the DOM except `document.createElement('canvas')` in `terrain.ts` and `renderer.ts`.
+- `src/game/*` imports nothing from React or the DOM except `document.createElement('canvas')` in `terrain-painter.ts` and `renderer.ts`.
 - `GameEngine` exposes imperative actions (`setMove`, `aimBy`, `startCharge`, `fire`, `endTurn`) and a `snapshot()` value object.
 - `GameView` owns the only loop. It feeds `dt` to the engine, drains `engine.events` to the renderer and the sound kit, then throttles the React snapshot.
 - React never mutates simulation state directly; HUD buttons call callbacks that delegate to the engine.
@@ -49,12 +49,12 @@ renderer.render(dt, paused);
 
 ## 3. Terrain
 
-The island exists twice:
+The island exists twice, in two classes:
 
-1. **Collision:** `Uint8Array` bitmask at 4 px resolution (320 × 180 cells). `isSolid`, `groundY` and the projectile sweeps read this.
-2. **Rendering:** a 1280 × 720 offscreen canvas painted once (gradient soil, grass, pebbles, strata, two floating shelves). Pixi samples it as a `Texture`.
+1. **Collision:** `Terrain` (`terrain.ts`) owns the `Uint8Array` bitmask at 4 px resolution (320 × 180 cells), generation, `isSolid`, `groundY` and crater carving. It imports no DOM, so the engine can be constructed in Node.
+2. **Rendering:** `TerrainPainter` (`terrain-painter.ts`) owns the 1280 × 720 offscreen canvas painted once (gradient soil, grass, pebbles, strata, two floating shelves). Pixi samples it as a `Texture`.
 
-Destruction (`Terrain.carve`) zeroes the mask circle and punches the same circle out of the canvas with `destination-out`, then paints a scorched rim clipped to the remaining dirt (`source-atop`). The renderer refreshes the GPU texture through `onCarve`.
+Destruction (`Terrain.carve`) zeroes the mask circle, then fires `onCarve`. The renderer hands those coordinates to `TerrainPainter`, which punches the circle out of the canvas with `destination-out`, paints a scorched rim clipped to the remaining dirt (`source-atop`), and refreshes the GPU texture.
 
 `groundY(x, fromY, maxDown)` returns the first solid row under a point. Worms use it to walk slopes and to detect that the ground was removed under their feet; projectiles never need it because they sweep the mask directly.
 

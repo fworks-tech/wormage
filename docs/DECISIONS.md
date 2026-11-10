@@ -12,10 +12,10 @@ A top-down shooter is a well-trodden demo: bullets, spawns and a score counter. 
 
 ## 2. Terrain as a bitmask plus a canvas
 
-A heightmap cannot represent tunnels or overhangs, and a full pixel-perfect bitmap is expensive to query. The compromise is a 4 px `Uint8Array` for collision and a 1× canvas for looks.
+A heightmap cannot represent tunnels or overhangs, and a full pixel-perfect bitmap is expensive to query. The compromise is a 4 px `Uint8Array` for collision and a 1× canvas for looks. They live in two classes — `Terrain` (mask) and `TerrainPainter` (canvas) — so the engine runs in Node without a DOM.
 
 **Why:** `isSolid` costs one array lookup; craters stay sharp on screen; texture updates happen only when the ground changes.
-**Cost:** 4 px collision granularity. Worms can stand on a pixel-wide ledge that is only 4 px wide. Acceptable for a cartoon game and invisible in practice.
+**Cost:** 4 px collision granularity. Worms can stand on a pixel-wide ledge that is only 4 px wide. Acceptable for a cartoon game and invisible in practice. Carving has to keep two representations in sync through the `onCarve` callback.
 
 ## 3. One integrator, three consumers
 
