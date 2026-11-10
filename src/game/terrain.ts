@@ -33,10 +33,25 @@ export interface TerrainShelf {
 }
 
 /** Two floating shelves give the arena vertical play. */
-const SHELVES: readonly TerrainShelf[] = [
+const SHELVES: ReadonlyArray<Readonly<TerrainShelf>> = [
   { x: WORLD_W * 0.33, y: 330, rx: 118, ry: 20 },
   { x: WORLD_W * 0.67, y: 286, rx: 96, ry: 17 },
 ];
+
+/** Noise octaves island generation consumes before any cosmetic pass. */
+const NOISE_POINTS = [7, 16, 42] as const;
+
+/**
+ * RNG positioned where island generation stopped. The painter continues the
+ * pre-split stream, so pebbles keep their exact positions for a given seed.
+ */
+export function cosmeticRng(seed: number): () => number {
+  const rng = mulberry32(seed);
+  for (const points of NOISE_POINTS) {
+    for (let i = 0; i <= points; i += 1) rng();
+  }
+  return rng;
+}
 
 /**
  * Destructible terrain as a coarse occupancy mask. Generation, collision and
@@ -44,18 +59,16 @@ const SHELVES: readonly TerrainShelf[] = [
  */
 export class Terrain {
   readonly mask = new Uint8Array(COLS * ROWS);
-  readonly shelves = SHELVES;
+  readonly shelves: ReadonlyArray<Readonly<TerrainShelf>> = SHELVES;
   readonly seed: number;
-  /** Fired after the mask changes, so the painter can punch the same hole. */
+  /** Fired after the mask changes. One listener: the renderer repaints its canvas. */
   onCarve: ((x: number, y: number, radius: number) => void) | null = null;
   private readonly surfaceAt: (x: number) => number;
 
   constructor(seed: number) {
     this.seed = seed >>> 0;
     const rng = mulberry32(this.seed);
-    const big = smoothNoise(rng, 7);
-    const medium = smoothNoise(rng, 16);
-    const small = smoothNoise(rng, 42);
+    const [big, medium, small] = NOISE_POINTS.map((points) => smoothNoise(rng, points));
 
     this.surfaceAt = (x: number): number => {
       const t = x / WORLD_W;

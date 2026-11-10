@@ -1,5 +1,5 @@
 import { WORLD_H, WORLD_W } from './config';
-import { mulberry32, Terrain } from './terrain';
+import { cosmeticRng, Terrain } from './terrain';
 
 /**
  * Canvas half of the terrain: paints the island once and punches craters into
@@ -20,7 +20,7 @@ export class TerrainPainter {
   }
 
   private paint(): void {
-    const rng = mulberry32(this.terrain.seed);
+    const rng = cosmeticRng(this.terrain.seed);
     const ctx = this.ctx;
     const surface = (x: number): number => this.terrain.surfaceY(x);
 
