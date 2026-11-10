@@ -72,6 +72,14 @@ export function Hud({
   useHoldRepeat(() => onAim(1), canAim && holdAimUp.current);
   useHoldRepeat(() => onAim(-1), canAim && holdAimDown.current);
 
+  // A pad held across a pause or turn handoff must not restart on the next aim phase.
+  useEffect(() => {
+    if (!canAim) {
+      holdAimUp.current = false;
+      holdAimDown.current = false;
+    }
+  }, [canAim]);
+
   const disarm = () => {
     onMove(0);
     onAimStop();
