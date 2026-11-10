@@ -135,7 +135,7 @@ export function MainMenu({ settings, player, onStart, onSaveSettings, lastResult
                     <kbd>Space</kbd> hold to charge, release to fire
                   </li>
                   <li>
-                    <kbd>J</kbd> jump · <kbd>1-4</kbd> weapons · <kbd>E</kbd> end turn
+                    <kbd>J</kbd> jump/let go · <kbd>R</kbd> rope · <kbd>1-4</kbd> weapons · <kbd>E</kbd> end turn
                   </li>
                   <li>
                     Drag on the battlefield to aim and fire on touch screens.

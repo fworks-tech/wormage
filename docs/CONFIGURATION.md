@@ -22,8 +22,9 @@ Every gameplay number lives in `src/game/config.ts`. Balance changes should neve
 | `WORM.walkSpeed` | 74 | px/s | unaffected by wind |
 | `WORM.jumpVelocity` | 300 | px/s | jump start only from the ground; one jump per landing |
 | `WORM.jumpPush` | 180 | px/s | horizontal carry of a jump, and the air-steer speed while holding a direction |
-| `JUMP_REACH` | ≈58 | px | peak jump height, derived from `jumpVelocity` and `GRAVITY`; the AI will not plan a climb above it |
+| `JUMP_REACH` | ≈58 | px | peak jump height, derived from `jumpVelocity` and `GRAVITY`; one jump is the walkable climb limit |
 | `AI.jumpWindowSeconds` | 6 | s | a blocked AI walk may keep jumping before it shoots from where it stands |
+| `AI.ropeWindowSeconds` | 4 | s | how long the AI may try to rope over a ledge before it gives up |
 | `WORM.maxHp` | 100 | HP | per worm |
 | `WORM.fallSafePx` | 150 | px | free fall before damage |
 | `WORM.fallDamagePerPx` | 0.16 | HP/px | linear after the safe distance |
@@ -35,6 +36,21 @@ Every gameplay number lives in `src/game/config.ts`. Balance changes should neve
 | `PREVIEW_SECONDS` | 3 | s | free-flight span the dotted aim preview samples when a weapon has no fuse or life |
 
 `WIND_ACCEL` maps the three wind settings to maximum wind units (`off: 0`, `light: 46`, `strong: 105`). Actual wind is re-rolled each turn in `[-max, +max]`, then applied to projectiles as `wind * windScale * 0.9` px/s².
+
+## Rope
+
+The anchored rope is a tool, not a weapon: every worm gets it, it has no ammo slot, and it never deals damage.
+
+| Constant | Value | Unit | Notes |
+| --- | --- | --- | --- |
+| `ROPE.range` | 220 | px | maximum attach distance, also the maximum rope length |
+| `ROPE.minLength` | 24 | px | shortest reel-in distance |
+| `ROPE.reelSpeed` | 130 | px/s | W/S reel rate |
+| `ROPE.swingAccel` | 3.5 | rad/s² | A/D swing acceleration while attached |
+| `ROPE.damping` | 0.999 | per step | energy lost by the pendulum |
+| `ROPE.maxAngularSpeed` | 4 | rad/s | swing-speed ceiling |
+
+Aim at terrain, then press `R` or the Rope card to attach. A/D swings, W/S reels in and out, and Jump (or the Rope card again) lets go with the pendulum's velocity. The rope is cleared on turn end, firing, death, water and game over.
 
 ## Weapons
 

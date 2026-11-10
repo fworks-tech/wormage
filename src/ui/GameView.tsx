@@ -61,6 +61,7 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
     setPaused(value);
     if (engineRef.current) {
       engineRef.current.moveDir = 0;
+      engineRef.current.reelDir = 0;
       // A release under the pause card must not fire the held shot.
       if (value) {
         engineRef.current.cancelCharge();
@@ -142,13 +143,21 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
               else if (keysRef.current.has('ArrowRight') || keysRef.current.has('KeyD')) engine.setMove(1);
               else engine.setMove(0);
 
-              if (engine.phase === 'aim') {
-                if (keysRef.current.has('ArrowUp') || keysRef.current.has('KeyW')) engine.aimBy(AIM.rate * FIXED_DT);
-                if (keysRef.current.has('ArrowDown') || keysRef.current.has('KeyS')) engine.aimBy(-AIM.rate * FIXED_DT);
+              if (engine.activeWorm?.rope) {
+                if (keysRef.current.has('ArrowUp') || keysRef.current.has('KeyW')) engine.setReel(-1);
+                else if (keysRef.current.has('ArrowDown') || keysRef.current.has('KeyS')) engine.setReel(1);
+                else engine.setReel(0);
+              } else {
+                engine.setReel(0);
+                if (engine.phase === 'aim') {
+                  if (keysRef.current.has('ArrowUp') || keysRef.current.has('KeyW')) engine.aimBy(AIM.rate * FIXED_DT);
+                  if (keysRef.current.has('ArrowDown') || keysRef.current.has('KeyS')) engine.aimBy(-AIM.rate * FIXED_DT);
+                }
               }
             } else {
               hudMoveRef.current = 0;
               engine.setMove(0);
+              engine.setReel(0);
             }
           } else {
             // A pad held when the turn passed must not walk the next human worm.
@@ -294,6 +303,9 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
         case 'KeyJ':
           if (!e.repeat && snap.activeTeam === 0) engine.jump();
           break;
+        case 'KeyR':
+          if (!e.repeat && snap.activeTeam === 0) engine.useRope();
+          break;
         case 'Digit1':
         case 'Digit2':
         case 'Digit3':
@@ -425,6 +437,8 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
           onAim={(dir) => engineRef.current?.aimBy(dir * 0.06)}
           onAimStop={() => undefined}
           onJump={() => engineRef.current?.jump()}
+          onRope={() => engineRef.current?.useRope()}
+          onReel={(dir) => engineRef.current?.setReel(dir)}
           onChargeStart={() => engineRef.current?.startCharge()}
           onChargeEnd={() => engineRef.current?.releaseCharge()}
           onChargeCancel={() => engineRef.current?.cancelCharge()}
@@ -464,8 +478,8 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
 
       {ready && (
         <p className="control-strip">
-          A/D walk · W/S aim · Space hold to fire · J jump · 1-4 weapons · E end turn · P pause — or drag from the
-          worm to aim and release to fire.
+          A/D walk or swing · W/S aim or reel · Space hold to fire · J jump/let go · R rope · 1-4 weapons · E end
+          turn · P pause — or drag from the worm to aim and release to fire.
         </p>
       )}
     </div>

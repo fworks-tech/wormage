@@ -53,6 +53,7 @@ Seeds: `/demo?seed=4242` fixes terrain generation and AI jitter so combat tests 
 | `unit/mockServer.test.ts` | leaderboard pagination and ranking, ruleset filter, idempotent registration |
 | `unit/replay.test.ts` | a recorded action log (walk, grenade bounce, kill) replays to the same final snapshot; jump/end-turn dispatch |
 | `unit/jump.test.ts` | ground-only jumps, directional jumps, air steering, jump during flight, AI jump when blocked |
+| `unit/rope.test.ts` | rope attach/range, reel, swing, release momentum, carved anchor, turn cleanup, AI rope attempt, replay |
 | `unit/parity.test.ts` | `simulateShot`/`previewFlight` read speed, gravity, wind, lifetime, fuse and bounce damping from `WEAPONS`/`BOUNCE` |
 | `unit/fullscreen.test.ts` | `/project` is excluded, unsupported/already-fullscreen/no-DOM no-ops, a refused request resolves false, landscape only on coarse pointers |
 | `unit/manifest.test.ts` | manifest fields, icon files and PNG dimensions, and the `index.html` links |
@@ -63,6 +64,7 @@ Seeds: `/demo?seed=4242` fixes terrain generation and AI jitter so combat tests 
 | `mobile-hud.spec.ts` | touch firing: tap/slop, deliberate drag, pointer cancel, pointer ownership, charge percentage |
 | `hud-layout.spec.ts` | 360/390/412 portrait and 915 landscape: target sizes, overlaps, Jump, compact landscape HUD |
 | `jump.spec.ts` | Jump button hop, in-air press ignored, front/back jumps, key-repeat guard, Jump stays enabled through retreat |
+| `rope.spec.ts` | HUD rope card anchors, reels in, and Jump lets go |
 | `data.spec.ts` | result screen, match registration, history/ranking visibility, persistence after refresh |
 
 Each Playwright spec runs twice, once per project (`desktop` / `mobile`). There are no visual baselines yet; the suite asserts engine state through the instrumentation hook instead. Visual baselines are planned for M1.

@@ -39,6 +39,7 @@ const checkViewport = async (page: import('@playwright/test').Page, viewport: { 
   expectTarget(await box(page, '[data-testid="btn-pause"]'), 'pause');
   expectTarget(await box(page, '[data-testid="btn-jump"]'), 'jump');
   expectTarget(await box(page, '[data-testid="weapon-bazooka"]'), 'weapon');
+  expectTarget(await box(page, '[data-testid="btn-rope"]'), 'rope');
   expectTarget(await box(page, '[data-testid="btn-fire"]'), 'fire');
 
   await expect(page.locator('.power-wrap')).toBeHidden();

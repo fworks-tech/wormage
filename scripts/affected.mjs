@@ -14,8 +14,9 @@ const GAME_UNIT = [
   'tests/unit/jump.test.ts',
   'tests/unit/parity.test.ts',
   'tests/unit/replay.test.ts',
+  'tests/unit/rope.test.ts',
 ];
-const GAME_E2E = ['tests/combat.spec.ts', 'tests/jump.spec.ts'];
+const GAME_E2E = ['tests/combat.spec.ts', 'tests/jump.spec.ts', 'tests/rope.spec.ts'];
 const UI_E2E = [
   'tests/combat.spec.ts',
   'tests/data.spec.ts',
@@ -25,6 +26,7 @@ const UI_E2E = [
   'tests/menu.spec.ts',
   'tests/mobile-hud.spec.ts',
   'tests/pwa.spec.ts',
+  'tests/rope.spec.ts',
 ];
 
 const FULL_FILES = [
@@ -50,12 +52,12 @@ const RULES = [
   {
     files: ['src/ui/GameView.tsx'],
     unit: [],
-    e2e: ['tests/combat.spec.ts', 'tests/fullscreen.spec.ts', 'tests/jump.spec.ts', 'tests/mobile-hud.spec.ts', 'tests/hud-layout.spec.ts', 'tests/data.spec.ts'],
+    e2e: ['tests/combat.spec.ts', 'tests/fullscreen.spec.ts', 'tests/jump.spec.ts', 'tests/mobile-hud.spec.ts', 'tests/hud-layout.spec.ts', 'tests/data.spec.ts', 'tests/rope.spec.ts'],
   },
   {
     files: ['src/ui/Hud.tsx'],
     unit: [],
-    e2e: ['tests/combat.spec.ts', 'tests/jump.spec.ts', 'tests/mobile-hud.spec.ts', 'tests/hud-layout.spec.ts'],
+    e2e: ['tests/combat.spec.ts', 'tests/jump.spec.ts', 'tests/mobile-hud.spec.ts', 'tests/hud-layout.spec.ts', 'tests/rope.spec.ts'],
   },
   {
     files: ['src/ui/fullscreen.ts'],

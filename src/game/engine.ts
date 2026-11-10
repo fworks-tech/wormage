@@ -8,6 +8,7 @@ import {
   JUMP_REACH,
   PROJECTILE_GRAVITY,
   RETREAT_SECONDS,
+  ROPE,
   TEAMS,
   WATER_Y,
   WEAPONS,
@@ -17,7 +18,7 @@ import {
   worldClamp,
 } from './config';
 import { Terrain, mulberry32 } from './terrain';
-import { clampAngle, mirrorAngle, planAiShot, planAiTurn } from './ai';
+import { clampAngle, mirrorAngle, planAiShot, planAiTurn, planRopeClimb } from './ai';
 import type { AiTurnPlan } from './ai';
 import { configKey } from './types';
 import type {
@@ -61,6 +62,7 @@ export class GameEngine {
   charging = false;
   weapon: WeaponId = 'bazooka';
   moveDir: -1 | 0 | 1 = 0;
+  reelDir: -1 | 0 | 1 = 0;
   events: GameEvent[] = [];
   winnerTeam: number | null = null;
   endReason: EndReason | null = null;
@@ -77,6 +79,7 @@ export class GameEngine {
   private aiStall = 0;
   private aiLastX = -1;
   private aiJumpDeadline: number | null = null;
+  private aiRopeDeadline: number | null = null;
   private projectileId = 0;
   private readonly rng: () => number;
   private readonly lastWormByTeam: Record<number, string> = {};
@@ -108,6 +111,7 @@ export class GameEngine {
           onGround: true,
           fallDistance: 0,
           airborne: false,
+          rope: null,
         });
       }
       return {
@@ -166,6 +170,7 @@ export class GameEngine {
     this.charging = false;
     this.weapon = 'bazooka';
     this.moveDir = 0;
+    this.reelDir = 0;
     this.hasFired = false;
     this.settleTimer = 0;
     this.retreatTimer = 0;
@@ -174,6 +179,7 @@ export class GameEngine {
     this.aiStall = 0;
     this.aiLastX = -1;
     this.aiJumpDeadline = null;
+    this.aiRopeDeadline = null;
     this.aiThinking = team.isAi;
     const maxWind = WIND_ACCEL[this.config.wind];
     this.wind = first ? 0 : Math.round((this.rng() * 2 - 1) * maxWind);
@@ -195,6 +201,77 @@ export class GameEngine {
 
   setMove(dir: -1 | 0 | 1): void {
     this.moveDir = dir;
+  }
+
+  setReel(dir: -1 | 0 | 1): void {
+    this.reelDir = dir;
+  }
+
+  /** Player rope input. The AI attaches through the same private path. */
+  useRope(): void {
+    if (this.teams[this.activeTeam].isAi) return;
+    this.toggleRope();
+  }
+
+  private toggleRope(): void {
+    const worm = this.activeWorm;
+    if (!worm || !worm.alive || this.phase === 'gameover' || this.charging) return;
+    if (worm.rope) {
+      this.releaseRope();
+      return;
+    }
+    if (this.phase !== 'aim' && !this.retreatActive) return;
+    const anchor = this.ropeAnchor(worm);
+    if (!anchor) return;
+    const dx = worm.x - anchor.x;
+    const dy = worm.y - 14 - anchor.y;
+    const length = Math.hypot(dx, dy);
+    if (length < ROPE.minLength || length > ROPE.range) return;
+    worm.rope = {
+      anchorX: anchor.x,
+      anchorY: anchor.y,
+      length,
+      angle: Math.atan2(dx, dy),
+      angularVelocity: 0,
+    };
+    worm.vx = 0;
+    worm.vy = 0;
+    worm.onGround = false;
+    worm.airborne = true;
+    worm.fallDistance = 0;
+    this.reelDir = 0;
+    this.events.push({ type: 'rope', x: anchor.x, y: anchor.y });
+  }
+
+  /** First solid point on the aim ray, within rope range. */
+  private ropeAnchor(worm: Worm): { x: number; y: number } | null {
+    const originX = worm.x;
+    const originY = worm.y - 14;
+    const dirX = Math.cos(worm.aimAngle);
+    const dirY = Math.sin(worm.aimAngle);
+    for (let distance = 8; distance <= ROPE.range; distance += 4) {
+      const x = originX + dirX * distance;
+      const y = originY + dirY * distance;
+      if (this.terrain.isSolid(x, y)) return { x, y };
+    }
+    return null;
+  }
+
+  private releaseRope(): void {
+    const worm = this.activeWorm;
+    if (!worm?.rope) return;
+    const rope = worm.rope;
+    worm.rope = null;
+    worm.onGround = false;
+    worm.airborne = true;
+    worm.fallDistance = 0;
+    worm.vx = rope.length * Math.cos(rope.angle) * rope.angularVelocity;
+    worm.vy = -rope.length * Math.sin(rope.angle) * rope.angularVelocity;
+    this.reelDir = 0;
+  }
+
+  private clearRopes(): void {
+    for (const team of this.teams) for (const worm of team.worms) worm.rope = null;
   }
 
   aimBy(delta: number): void {
@@ -221,6 +298,12 @@ export class GameEngine {
         break;
       case 'jump':
         this.jump(action.dir);
+        break;
+      case 'rope':
+        this.useRope();
+        break;
+      case 'reel':
+        this.setReel(action.dir);
         break;
       case 'weapon':
         this.selectWeapon(action.id);
@@ -249,7 +332,7 @@ export class GameEngine {
   }
 
   startCharge(): void {
-    if (this.phase !== 'aim' || this.teams[this.activeTeam].isAi || this.hasFired) return;
+    if (this.phase !== 'aim' || this.teams[this.activeTeam].isAi || this.hasFired || this.activeWorm?.rope) return;
     this.charging = true;
     this.power = Math.max(this.power, 0);
   }
@@ -266,7 +349,7 @@ export class GameEngine {
   }
 
   selectWeapon(id: WeaponId): void {
-    if (this.phase !== 'aim') return;
+    if (this.phase !== 'aim' || this.activeWorm?.rope) return;
     const ammo = this.teams[this.activeTeam].ammo[id];
     if (WEAPONS[id].ammo !== null && ammo <= 0) return;
     this.weapon = id;
@@ -275,6 +358,10 @@ export class GameEngine {
   /** Player jump input. The AI uses `aiJump`; this guard is authoritative against stale UI snapshots. */
   jump(dir: -1 | 0 | 1 = this.moveDir): void {
     if (this.teams[this.activeTeam].isAi) return;
+    if (this.activeWorm?.rope) {
+      this.releaseRope();
+      return;
+    }
     this.applyJump(dir);
   }
 
@@ -300,6 +387,7 @@ export class GameEngine {
   fire(): void {
     const worm = this.activeWorm;
     if (!worm || this.phase !== 'aim' || this.hasFired) return;
+    if (worm.rope) this.releaseRope();
     const team = this.teams[this.activeTeam];
     const weapon = WEAPONS[this.weapon];
     if (weapon.ammo !== null && team.ammo[this.weapon] <= 0) return;
@@ -362,10 +450,12 @@ export class GameEngine {
   private finishTurn(): void {
     if (this.phase === 'gameover') return;
     this.moveDir = 0;
+    this.reelDir = 0;
     this.charging = false;
     this.aiThinking = false;
     this.retreatTimer = 0;
     this.projectiles = [];
+    this.clearRopes();
     this.activeTeam = this.otherTeam(this.activeTeam);
     this.turn += 1;
     this.beginTurn();
@@ -378,7 +468,9 @@ export class GameEngine {
     this.endReason = reason;
     this.charging = false;
     this.moveDir = 0;
+    this.reelDir = 0;
     this.projectiles = [];
+    this.clearRopes();
     this.events.push({ type: 'gameover', winnerTeamId: winner });
   }
 
@@ -394,6 +486,7 @@ export class GameEngine {
     worm.fallDistance = 0;
     if (worm.hp <= 0) {
       worm.alive = false;
+      worm.rope = null;
       this.events.push({ type: 'death', x: worm.x, y: worm.y, color: this.teams[worm.teamId].color });
       if (sourceTeam !== null && sourceTeam !== worm.teamId) this.kills[sourceTeam] += 1;
       this.checkWipeout();
@@ -425,8 +518,73 @@ export class GameEngine {
     }
   }
 
+  /** Pendulum around the anchor, with gravity pulling the worm toward straight down. */
+  private stepRopedWorm(worm: Worm, dt: number): void {
+    const rope = worm.rope;
+    if (!rope) return;
+    if (!this.terrain.isSolid(rope.anchorX, rope.anchorY)) {
+      worm.rope = null;
+      return;
+    }
+
+    const isActive = worm.id === this.activeWormId;
+    const swing = isActive ? this.moveDir : 0;
+    const reel = isActive ? this.reelDir : 0;
+    const previous = { x: worm.x, y: worm.y, angle: rope.angle, length: rope.length };
+    const accel = -(GRAVITY / rope.length) * Math.sin(rope.angle) + swing * ROPE.swingAccel;
+    rope.angularVelocity = (rope.angularVelocity + accel * dt) * ROPE.damping;
+    rope.angularVelocity = worldClamp(
+      rope.angularVelocity,
+      -ROPE.maxAngularSpeed,
+      ROPE.maxAngularSpeed,
+    );
+    rope.angle += rope.angularVelocity * dt;
+    rope.length = worldClamp(rope.length + reel * ROPE.reelSpeed * dt, ROPE.minLength, ROPE.range);
+
+    const chestX = rope.anchorX + Math.sin(rope.angle) * rope.length;
+    const chestY = rope.anchorY + Math.cos(rope.angle) * rope.length;
+    const nextY = chestY + 14;
+
+    if (nextY > WATER_Y) {
+      worm.x = chestX;
+      worm.y = WATER_Y;
+      worm.rope = null;
+      worm.hp = 0;
+      worm.alive = false;
+      this.events.push({ type: 'splash', x: worm.x, y: WATER_Y });
+      this.checkWipeout();
+      return;
+    }
+
+    if (this.terrain.isSolid(chestX, chestY) || this.terrain.isSolid(chestX, nextY - 6)) {
+      // The swing ran into terrain: hold the last valid pose. Reeling in still
+      // lifts the worm clear instead of dropping the rope on the first frame.
+      rope.angle = previous.angle;
+      rope.length = previous.length;
+      rope.angularVelocity = 0;
+      worm.x = previous.x;
+      worm.y = previous.y;
+      worm.onGround = false;
+      worm.airborne = true;
+      worm.fallDistance = 0;
+      return;
+    }
+
+    worm.x = chestX;
+    worm.y = nextY;
+    worm.vx = rope.length * Math.cos(rope.angle) * rope.angularVelocity;
+    worm.vy = -rope.length * Math.sin(rope.angle) * rope.angularVelocity;
+    worm.onGround = false;
+    worm.airborne = true;
+    worm.fallDistance = 0;
+  }
+
   private stepWorm(worm: Worm, dt: number): void {
     if (!worm.alive) return;
+    if (worm.rope) {
+      this.stepRopedWorm(worm, dt);
+      return;
+    }
     const isActive = worm.id === this.activeWormId;
     const canWalk =
       isActive &&
@@ -538,6 +696,7 @@ export class GameEngine {
       this.events.push({ type: 'hurt', x: worm.x, y: worm.y - 26, amount: Math.round(amount) });
       if (worm.hp <= 0 && worm.alive) {
         worm.alive = false;
+        worm.rope = null;
         this.events.push({ type: 'death', x: worm.x, y: worm.y, color: this.teams[worm.teamId].color });
         this.checkWipeout();
       }
@@ -671,6 +830,25 @@ export class GameEngine {
     const worm = this.activeWorm;
     if (!worm) return;
 
+    if (worm.rope) {
+      const plan = this.aiPlan;
+      const targetX = plan?.fireX ?? worm.x;
+      const targetGround = plan?.fireY ?? worm.y;
+      this.moveDir = Math.abs(targetX - worm.x) <= 6 ? 0 : targetX > worm.x ? 1 : -1;
+      this.reelDir = -1;
+      if (
+        worm.y <= targetGround - 4 ||
+        (this.aiRopeDeadline !== null && this.timeLeft <= this.aiRopeDeadline)
+      ) {
+        this.moveDir = 0;
+        this.reelDir = 0;
+        this.releaseRope();
+        this.aiStall = 0;
+        this.aiLastX = worm.x;
+      }
+      return;
+    }
+
     if (this.retreatActive) {
       const dx = this.aiPlan ? this.aiPlan.retreatX - worm.x : 0;
       this.moveDir = Math.abs(dx) <= 6 ? 0 : dx > 0 ? 1 : -1;
@@ -708,6 +886,35 @@ export class GameEngine {
 
     const plan = this.aiPlan;
     const distance = plan.fireX - worm.x;
+    const planGround = this.terrain.groundY(plan.fireX, Math.max(0, worm.y - ROPE.range - 12), WATER_Y);
+    const planInReach = planGround !== null && worm.y - planGround <= JUMP_REACH;
+    const planTarget = planGround ?? plan.fireY;
+
+    // A high spot is worth an early rope cast from a distance; walking into the
+    // wall first only leaves the worm without a shallow anchor angle.
+    if (!planInReach && worm.onGround && Math.abs(distance) <= ROPE.range * 0.95) {
+      if (this.aiRopeDeadline === null) {
+        this.aiRopeDeadline = this.timeLeft - AI.ropeWindowSeconds;
+      }
+      if (this.timeLeft > this.aiRopeDeadline) {
+        const ropePlan = planRopeClimb(
+          this.terrain,
+          { id: worm.id, teamId: worm.teamId, x: worm.x, y: worm.y },
+          plan.fireX,
+          planTarget,
+        );
+        if (ropePlan) {
+          this.aimAt(ropePlan.angle, this.power);
+          this.toggleRope();
+          if (worm.rope) {
+            this.aiStall = 0;
+            this.aiLastX = worm.x;
+            return;
+          }
+        }
+      }
+    }
+
     if (Math.abs(distance) > 6) {
       this.moveDir = distance > 0 ? 1 : -1;
       if (Math.abs(worm.x - this.aiLastX) < 0.5) this.aiStall += dt;
@@ -718,23 +925,39 @@ export class GameEngine {
       // Blocked or out of turn time: take the best bazooka shot from here.
       if (this.aiStall < 1.5 && this.timeLeft > 0.5) return;
 
-      // A blocked AI walk keeps jumping for a bounded window, then shoots from
-      // here. Terrain can change mid-turn, so re-check the plan's reach.
-      const planGround = this.terrain.groundY(plan.fireX, Math.max(0, worm.y - JUMP_REACH - 12), WATER_Y);
-      const planInReach = planGround !== null && worm.y - planGround <= JUMP_REACH;
-      if (
-        this.aiStall >= 1.5 &&
-        worm.onGround &&
-        planInReach &&
-        (this.aiJumpDeadline === null || this.timeLeft > this.aiJumpDeadline)
-      ) {
-        if (this.aiJumpDeadline === null) {
-          this.aiJumpDeadline = this.timeLeft - AI.jumpWindowSeconds;
+      // A blocked AI walk climbs with the rope when the ledge is too high,
+      // otherwise jumps for a bounded window, then shoots from here.
+      if (this.aiStall >= 1.5 && worm.onGround) {
+        if (!planInReach) {
+          if (this.aiRopeDeadline === null) {
+            this.aiRopeDeadline = this.timeLeft - AI.ropeWindowSeconds;
+          }
+          if (this.timeLeft > this.aiRopeDeadline) {
+            const ropePlan = planRopeClimb(
+              this.terrain,
+              { id: worm.id, teamId: worm.teamId, x: worm.x, y: worm.y },
+              plan.fireX,
+              planTarget,
+            );
+            if (ropePlan) {
+              this.aimAt(ropePlan.angle, this.power);
+              this.toggleRope();
+              if (worm.rope) {
+                this.aiStall = 0;
+                this.aiLastX = worm.x;
+                return;
+              }
+            }
+          }
+        } else if (this.aiJumpDeadline === null || this.timeLeft > this.aiJumpDeadline) {
+          if (this.aiJumpDeadline === null) {
+            this.aiJumpDeadline = this.timeLeft - AI.jumpWindowSeconds;
+          }
+          this.aiJump(this.moveDir);
+          this.aiStall = 0;
+          this.aiLastX = worm.x;
+          return;
         }
-        this.aiJump(this.moveDir);
-        this.aiStall = 0;
-        this.aiLastX = worm.x;
-        return;
       }
 
       this.moveDir = 0;
@@ -846,6 +1069,7 @@ export class GameEngine {
       aiThinking: this.aiThinking,
       retreatLeft: this.retreatActive ? this.retreatTimer : 0,
       activeOnGround: active?.onGround ?? true,
+      ropeAttached: Boolean(active?.rope),
       fuseLeft: this.projectiles.reduce<number | null>((soonest, p) => {
         if (p.fuse === null) return soonest;
         const left = Math.max(0, p.fuse - p.age);
