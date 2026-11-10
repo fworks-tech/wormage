@@ -287,7 +287,7 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
           if (!e.repeat && snap.activeTeam === 0) engine.startCharge();
           break;
         case 'KeyJ':
-          if (snap.activeTeam === 0) engine.jump();
+          if (!e.repeat && snap.activeTeam === 0) engine.jump();
           break;
         case 'Digit1':
         case 'Digit2':

@@ -67,6 +67,15 @@ test('holding the opposite direction jumps the worm back', async ({ page }) => {
   expect(after!.x).toBeLessThan(start!.x - 20);
 });
 
+test('a repeated J keydown does not jump', async ({ page }) => {
+  await startMatch(page);
+  await page.waitForTimeout(150);
+  await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ', repeat: true })));
+  await page.waitForTimeout(100);
+
+  expect((await activeWorm(page))!.onGround).toBe(true);
+});
+
 test('jumping is still available during the retreat window', async ({ page }) => {
   await startMatch(page);
   await page.getByTestId('btn-fire').click();
