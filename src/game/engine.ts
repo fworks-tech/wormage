@@ -720,9 +720,8 @@ export class GameEngine {
 
       // A blocked AI walk keeps jumping for a bounded window, then shoots from
       // here. Terrain can change mid-turn, so re-check the plan's reach.
-      const planGround =
-        this.terrain.groundY(plan.fireX, Math.max(0, worm.y - JUMP_REACH - 12), WATER_Y) ?? worm.y;
-      const planInReach = worm.y - planGround <= JUMP_REACH;
+      const planGround = this.terrain.groundY(plan.fireX, Math.max(0, worm.y - JUMP_REACH - 12), WATER_Y);
+      const planInReach = planGround !== null && worm.y - planGround <= JUMP_REACH;
       if (
         this.aiStall >= 1.5 &&
         worm.onGround &&

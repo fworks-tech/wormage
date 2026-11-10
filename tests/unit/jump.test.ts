@@ -159,6 +159,40 @@ describe('jump physics', () => {
     expect(engine.hasFired).toBe(true);
   });
 
+  test('the AI fires instead of jumping when its firing spot vanished', () => {
+    const engine = new GameEngine(config());
+    Object.assign(engine.terrain, {
+      isSolid: (x: number) => x >= 430,
+      groundY: (x: number) => (x >= 430 ? null : 500),
+    });
+    engine.endTurn();
+    const worm = engine.activeWorm!;
+    worm.x = 400;
+    worm.y = 500;
+    worm.vy = 0;
+    worm.onGround = true;
+    worm.airborne = false;
+    worm.fallDistance = 0;
+
+    const internals = engine as unknown as {
+      aiPlan: { weapon: 'bazooka'; fireX: number; angle: number; power: number; retreatX: number } | null;
+      aiThinking: boolean;
+    };
+    internals.aiPlan = {
+      weapon: 'bazooka',
+      fireX: 500,
+      angle: -0.5,
+      power: 0.5,
+      retreatX: worm.x,
+    };
+    internals.aiThinking = false;
+
+    step(engine, 2.5);
+
+    expect(engine.events.filter((event) => event.type === 'jump')).toHaveLength(0);
+    expect(engine.hasFired).toBe(true);
+  });
+
   test('the AI keeps jumping while its walk is blocked', () => {
     const engine = new GameEngine(config());
     const blockedX = 1200;
