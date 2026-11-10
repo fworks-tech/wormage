@@ -140,6 +140,41 @@ test('the shooter can retreat during the post-fire window', async ({ page }) => 
   );
 });
 
+test('surrendering mid-flight leaves no frozen projectile', async ({ page }) => {
+  await startMatch(page);
+  await page.getByTestId('weapon-grenade').click();
+  await page.getByTestId('btn-fire').click();
+  await page.waitForFunction(() => {
+    const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
+    return state.phase === 'projectile' && state.fuseLeft !== null;
+  });
+
+  const after = await page.evaluate(() => {
+    const engine = (
+      window as never as {
+        __WORMAGE__: {
+          engine: {
+            surrender: () => void;
+            projectilesInFlight: readonly unknown[];
+            snapshot: () => Snapshot;
+          };
+        };
+      }
+    ).__WORMAGE__.engine;
+    engine.surrender();
+    const state = engine.snapshot();
+    return {
+      phase: state.phase,
+      fuseLeft: state.fuseLeft,
+      inFlight: engine.projectilesInFlight.length,
+    };
+  });
+
+  expect(after.phase).toBe('gameover');
+  expect(after.inFlight).toBe(0);
+  expect(after.fuseLeft).toBeNull();
+});
+
 test('dynamite fuses down and explodes before the turn passes', async ({ page }) => {
   await startMatch(page);
   const hpBefore = (await snapshot(page)).teams[0].hp;
