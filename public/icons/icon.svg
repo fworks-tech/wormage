@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Wormage">
+  <rect width="512" height="512" fill="#08100f" />
+  <path d="M0 372 L86 340 L172 362 L258 330 L344 352 L430 322 L512 348 L512 512 L0 512 Z" fill="#142822" />
+  <path d="M112 348 Q 206 140 376 184" fill="none" stroke="#e8ad68" stroke-width="30" stroke-linecap="round" />
+  <circle cx="376" cy="184" r="38" fill="#9ee37d" />
+  <circle cx="376" cy="184" r="38" fill="none" stroke="#08100f" stroke-width="12" />
+</svg>
