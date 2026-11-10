@@ -56,14 +56,15 @@ On iOS, Share → Add to Home Screen launches Wormage without Safari's chrome (m
 | Walk | `A` / `D` or arrows | ◀ ▶ pads |
 | Aim | `W` / `S` | ▲ ▼ pads, or tap/drag the field |
 | Fire | `Space` (hold to charge) | hold **Fire**, or drag 8 px+ and release |
-| Jump | `J` (hold a direction to jump front/back; jump again in air to flip) | **Jump**/`Flip`; hold ◀/▶ and tap Jump |
+| Jump | `J` (hold a direction to jump front/back; hold one in the air to steer) | **Jump**; hold ◀/▶ and tap Jump |
+| Rope | `R` (aim first; A/D swings, W/S reels, Jump lets go) | **Rope** card; drag to aim, tap Rope, then Jump to let go |
 | Switch weapon | `1`–`4` | weapon dock |
 | End turn | `E` | End turn |
 | Pause | `P` / `Esc` | Pause |
 
 Three worms per side, 100 HP each. Wipe out the other team to win. The turn timer ends your turn, not the match. Falling into water is fatal; long falls hurt. Self-damage is on, as tradition demands.
 
-Weapons: **Bazooka** (unlimited, 42 dmg), **Grenade** (3 bounces, 3s fuse), **Shotgun** (4 flat shots), **Dynamite** (2, 2.2s fuse, huge crater). After firing you have three seconds to walk before the turn passes — enough to leave your own blast.
+Weapons: **Bazooka** (unlimited, 42 dmg), **Grenade** (3 bounces, 3s fuse), **Shotgun** (4 flat shots), **Dynamite** (2, 2.2s fuse, huge crater). Every worm also carries an unlimited **Rope**: aim at terrain, attach, swing, reel and let go to cross gaps and climb ledges. After firing you have three seconds to walk before the turn passes — enough to leave your own blast.
 
 ## Architecture at a glance
 
