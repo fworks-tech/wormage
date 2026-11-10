@@ -6,5 +6,5 @@ export interface TestSelection {
   reason: string;
 }
 
-export function listTests(): { specs: string[]; units: string[] };
+export function listTests(root?: string): { specs: string[]; units: string[] };
 export function selectTests(input: { changed: string[]; labels?: string[] }): TestSelection;

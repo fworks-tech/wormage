@@ -43,7 +43,8 @@ const FULL_FILES = [
 const FULL_DIRS = ['.github/', 'scripts/'];
 
 const RULES = [
-  { files: ['src/game/config.ts'], unit: GAME_UNIT, e2e: [...GAME_E2E, 'tests/hud-layout.spec.ts'] },
+  // config.ts also feeds the HUD, menu, result screen and stored settings.
+  { files: ['src/game/config.ts'], unit: GAME_UNIT, e2e: UI_E2E },
   { dirs: ['src/game/'], unit: GAME_UNIT, e2e: GAME_E2E },
   {
     files: ['src/ui/GameView.tsx'],
@@ -56,7 +57,10 @@ const RULES = [
     e2e: ['tests/combat.spec.ts', 'tests/jump.spec.ts', 'tests/mobile-hud.spec.ts', 'tests/hud-layout.spec.ts'],
   },
   { files: ['src/ui/fullscreen.ts'], unit: ['tests/unit/fullscreen.test.ts'], e2e: ['tests/fullscreen.spec.ts'] },
-  { files: ['src/ui/MainMenu.tsx', 'src/ui/NewGameMenu.tsx', 'src/ui/OptionsPanel.tsx'], unit: [], e2e: ['tests/menu.spec.ts'] },
+  { files: ['src/ui/MainMenu.tsx'], unit: [], e2e: ['tests/data.spec.ts', 'tests/fullscreen.spec.ts', 'tests/menu.spec.ts'] },
+  // Every gameplay spec starts by clicking Start Game on this screen.
+  { files: ['src/ui/NewGameMenu.tsx'], unit: [], e2e: UI_E2E },
+  { files: ['src/ui/OptionsPanel.tsx'], unit: [], e2e: ['tests/menu.spec.ts'] },
   {
     files: ['src/ui/Leaderboard.tsx', 'src/ui/MatchHistory.tsx', 'src/ui/ResultScreen.tsx'],
     unit: [],
@@ -75,14 +79,20 @@ const RULES = [
 
 const NO_TEST_EXTENSIONS = ['.md', '.png', '.jpg', '.svg'];
 
-export function listTests() {
-  const specs = readdirSync(join(ROOT, 'tests'))
-    .filter((file) => file.endsWith('.spec.ts'))
-    .map((file) => `tests/${file}`);
-  const units = readdirSync(join(ROOT, 'tests/unit'))
-    .filter((file) => file.endsWith('.test.ts'))
-    .map((file) => `tests/unit/${file}`);
-  return { specs, units };
+// Vitest and Playwright both discover tests recursively, so the reachability
+// check must too.
+function listTestsIn(root, dir, pattern) {
+  return readdirSync(join(root, dir), { recursive: true, encoding: 'utf8' })
+    .map((file) => `${dir}/${file.replace(/\\/g, '/')}`)
+    .filter((file) => pattern.test(file))
+    .sort();
+}
+
+export function listTests(root = ROOT) {
+  return {
+    specs: listTestsIn(root, 'tests', /\.spec\.ts$/).filter((file) => !file.startsWith('tests/unit/')),
+    units: listTestsIn(root, 'tests/unit', /\.test\.ts$/),
+  };
 }
 
 function fullResult(reason) {
@@ -143,12 +153,14 @@ function defaultBase() {
 
 // Union of the branch diff and the local worktree, so the pre-push hook sees
 // uncommitted and untracked files too. In CI the worktree is clean.
+// Deletions and the old side of a rename still need the tests for that area,
+// so include D and turn rename detection off.
 function changedFiles(base) {
   const files = new Set();
   const add = (args) => git(args).forEach((file) => files.add(file));
-  add(['diff', '--name-only', '--diff-filter=ACMRT', `${base}...HEAD`]);
-  add(['diff', '--name-only', '--diff-filter=ACMRT']);
-  add(['diff', '--cached', '--name-only', '--diff-filter=ACMRT']);
+  add(['diff', '--name-only', '--no-renames', '--diff-filter=ACDMRT', `${base}...HEAD`]);
+  add(['diff', '--name-only', '--no-renames', '--diff-filter=ACDMRT']);
+  add(['diff', '--cached', '--name-only', '--no-renames', '--diff-filter=ACDMRT']);
   add(['ls-files', '--others', '--exclude-standard']);
   return [...files];
 }

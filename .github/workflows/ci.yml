@@ -45,7 +45,10 @@ jobs:
 
       - name: Unit tests
         if: steps.scope.outputs.run_unit == 'true'
-        run: npx vitest run ${{ steps.scope.outputs.unit_args }}
+        env:
+          # env keeps repo-controlled paths out of the shell parser
+          UNIT_ARGS: ${{ steps.scope.outputs.unit_args }}
+        run: npx vitest run $UNIT_ARGS
 
       - run: npm run build
 
@@ -55,7 +58,9 @@ jobs:
 
       - name: E2E
         if: steps.scope.outputs.run_e2e == 'true'
-        run: npx playwright test ${{ steps.scope.outputs.e2e_args }}
+        env:
+          E2E_ARGS: ${{ steps.scope.outputs.e2e_args }}
+        run: npx playwright test $E2E_ARGS
 
       - name: Upload Playwright report
         if: failure() && steps.scope.outputs.run_e2e == 'true'
