@@ -57,7 +57,7 @@ On iOS, Share → Add to Home Screen launches Wormage without Safari's chrome (m
 | Aim | `W` / `S` | ▲ ▼ pads, or tap/drag the field |
 | Fire | `Space` (hold to charge) | hold **Fire**, or drag 8 px+ and release |
 | Jump | `J` (hold a direction to jump front/back; hold one in the air to steer) | **Jump**; hold ◀/▶ and tap Jump |
-| Rope | `R` (aim first; A/D swings, W/S reels, Jump lets go) | **Rope** card; drag to aim, tap Rope, then Jump to let go |
+| Rope | `R` (aim first; A/D swings, W/S reels, Jump lets go) | **Rope** card; tap the field to aim, tap Rope, then Jump to let go |
 | Switch weapon | `1`–`4` | weapon dock |
 | End turn | `E` | End turn |
 | Pause | `P` / `Esc` | Pause |
