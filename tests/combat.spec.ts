@@ -122,6 +122,25 @@ test('the on-screen walk buttons move the active worm', async ({ page }) => {
   expect(await activeX(page)).toBeCloseTo(after!, 1);
 });
 
+test('the on-screen walk buttons move the worm during retreat', async ({ page }) => {
+  await startMatch(page);
+  await page.getByTestId('btn-fire').click();
+  await page.waitForFunction(() => {
+    const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
+    return state.retreatLeft > 0;
+  });
+
+  const before = await activeX(page);
+  const pad = await page.getByTestId('btn-left').boundingBox();
+  await page.mouse.move(pad!.x + pad!.width / 2, pad!.y + pad!.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(400);
+  await page.mouse.up();
+
+  const after = await activeX(page);
+  expect(after!).toBeLessThan(before!);
+});
+
 test('weapon selection follows ammo and keyboard shortcuts', async ({ page }) => {
   await startMatch(page);
   await page.getByTestId('weapon-dynamite').click();
