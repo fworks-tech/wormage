@@ -99,7 +99,7 @@ describe('blast damage', () => {
     expect(blastFalloff(reach / 2, reach)).toBeCloseTo(0.5);
   });
 
-  test('never drops below 22% inside the radius', () => {
+  test('never drops below 22%, even outside the radius', () => {
     expect(blastFalloff(reach, reach)).toBeCloseTo(0.22);
     expect(blastFalloff(reach * 4, reach)).toBe(0.22);
   });

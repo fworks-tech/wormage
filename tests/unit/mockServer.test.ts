@@ -31,7 +31,10 @@ test('the leaderboard paginates and ranks the fixtures', () => {
   expect(first.total).toBe(MOCK_TOTAL_FIXTURES);
   expect(first.items.map((row) => row.rank)).toEqual([1, 2, 3]);
   expect(second.items.map((row) => row.rank)).toEqual([4, 5, 6]);
-  expect(first.items.map((row) => row.playerId)).not.toContain(second.items[0].playerId);
+  expect(first.items).toHaveLength(3);
+  expect(second.items).toHaveLength(3);
+  const keys = [...first.items, ...second.items].map((row) => `${row.playerId}|${row.createdAt}|${row.configKey}`);
+  expect(new Set(keys).size).toBe(keys.length);
   const scores = [...first.items, ...second.items].map((row) => row.score);
   expect(scores).toEqual([...scores].sort((a, b) => b - a));
 });
