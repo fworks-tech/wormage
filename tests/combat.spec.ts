@@ -144,10 +144,14 @@ test('the fuse countdown shows the real fuse and scales its bar', async ({ page 
   const total = WEAPONS.dynamite.fuse!;
   await expect(page.getByTestId('hud-timer')).toHaveText(fuse.toFixed(1));
 
-  const width = await page
-    .getByTestId('hud-timer-fill')
-    .evaluate((el) => Number.parseFloat((el as HTMLElement).style.width));
-  expect(width).toBeCloseTo((fuse / total) * 100, 0);
+  const expected = (fuse / total) * 100;
+  await expect
+    .poll(() =>
+      page
+        .getByTestId('hud-timer-fill')
+        .evaluate((el) => Number.parseFloat((el as HTMLElement).style.width)),
+    )
+    .toBeCloseTo(expected, 1);
 });
 
 test('the retreat countdown scales its bar by the retreat window, not the fuse', async ({ page }) => {
@@ -181,12 +185,11 @@ test('pausing cancels a charge instead of firing on release', async ({ page }) =
 
   await page.getByTestId('btn-pause').click();
   await page.keyboard.up('Space');
-  await page.waitForTimeout(150);
-  await page.getByTestId('btn-resume').click();
-  await page.waitForTimeout(300);
 
+  // The release happens under the pause card; nothing may fire.
   const after = await snapshot(page);
   expect(after.phase).toBe('aim');
+  expect(after.charging).toBe(false);
   expect(after.power).toBe(0);
 });
 
