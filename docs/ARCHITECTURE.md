@@ -139,3 +139,4 @@ Match registration is idempotent on `clientMatchId`: a retry after a timeout ret
 - The mock layer supports deterministic latency/failure scenarios, which is how the loading/empty/error and duplicate-write tests are written.
 
 See `tests/` for the suites and `docs/DECISIONS.md` for why these choices were made.
+
