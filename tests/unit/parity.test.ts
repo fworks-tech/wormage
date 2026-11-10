@@ -13,45 +13,40 @@ const ground: AiTerrain = {
   groundY: () => 500,
 };
 
-const restore = <T extends object, K extends keyof T>(target: T, key: K, value: T[K]) => {
+/** Mutate one config value for the duration of a test body. */
+const withConfig = <T extends object, K extends keyof T>(target: T, key: K, value: T[K], run: () => void) => {
+  const original = target[key];
   target[key] = value;
+  try {
+    run();
+  } finally {
+    target[key] = original;
+  }
 };
 
 describe('simulateShot reads the weapon config, not copies of it', () => {
   test('speed comes from WEAPONS', () => {
     const before = simulateShot(open, 400, 486, -0.6, 0.8, 'bazooka', 0, 0.5);
-    const speedMax = WEAPONS.bazooka.speedMax;
-    WEAPONS.bazooka.speedMax = speedMax * 1.5;
-    try {
+    withConfig(WEAPONS.bazooka, 'speedMax', WEAPONS.bazooka.speedMax * 1.5, () => {
       const after = simulateShot(open, 400, 486, -0.6, 0.8, 'bazooka', 0, 0.5);
       expect(Math.abs(after.x - before.x)).toBeGreaterThan(5);
-    } finally {
-      restore(WEAPONS.bazooka, 'speedMax', speedMax);
-    }
+    });
   });
 
   test('gravity scale comes from WEAPONS', () => {
     const before = simulateShot(open, 400, 486, -0.6, 0.8, 'bazooka', 0, 0.5);
-    const gravityScale = WEAPONS.bazooka.gravityScale;
-    WEAPONS.bazooka.gravityScale = gravityScale * 2;
-    try {
+    withConfig(WEAPONS.bazooka, 'gravityScale', WEAPONS.bazooka.gravityScale * 2, () => {
       const after = simulateShot(open, 400, 486, -0.6, 0.8, 'bazooka', 0, 0.5);
       expect(Math.abs(after.y - before.y)).toBeGreaterThan(5);
-    } finally {
-      restore(WEAPONS.bazooka, 'gravityScale', gravityScale);
-    }
+    });
   });
 
   test('wind scale comes from WEAPONS', () => {
     const before = simulateShot(open, 400, 486, -0.6, 0.8, 'bazooka', 100, 0.5);
-    const windScale = WEAPONS.bazooka.windScale;
-    WEAPONS.bazooka.windScale = 0;
-    try {
+    withConfig(WEAPONS.bazooka, 'windScale', 0, () => {
       const after = simulateShot(open, 400, 486, -0.6, 0.8, 'bazooka', 100, 0.5);
       expect(Math.abs(after.x - before.x)).toBeGreaterThan(5);
-    } finally {
-      restore(WEAPONS.bazooka, 'windScale', windScale);
-    }
+    });
   });
 
   test('the shotgun stops at its configured lifetime', () => {
@@ -59,14 +54,10 @@ describe('simulateShot reads the weapon config, not copies of it', () => {
     const atLife = simulateShot(open, start.x, start.y, -0.1, 1, 'shotgun', 0, null, false);
     expect(Math.hypot(atLife.x - start.x, atLife.y - start.y)).toBeGreaterThan(200);
 
-    const life = WEAPONS.shotgun.life;
-    WEAPONS.shotgun.life = 0.1;
-    try {
+    withConfig(WEAPONS.shotgun, 'life', 0.1, () => {
       const short = simulateShot(open, start.x, start.y, -0.1, 1, 'shotgun', 0, null, false);
       expect(Math.hypot(short.x - start.x, short.y - start.y)).toBeLessThan(200);
-    } finally {
-      restore(WEAPONS.shotgun, 'life', life);
-    }
+    });
   });
 
   test('the grenade bounces with BOUNCE damping', () => {
@@ -74,14 +65,32 @@ describe('simulateShot reads the weapon config, not copies of it', () => {
     const bounced = simulateShot(ground, 400, 486, -0.3, 0.5, 'grenade', 0, null, true);
     expect(bounced.y).not.toBe(noBounce.y);
 
-    const bounceX = BOUNCE.x;
-    Object.assign(BOUNCE, { x: 1 });
-    try {
+    withConfig(BOUNCE, 'x', 1, () => {
       const undamped = simulateShot(ground, 400, 486, -0.3, 0.5, 'grenade', 0, null, true);
       expect(Math.abs(undamped.x - bounced.x)).toBeGreaterThan(5);
-    } finally {
-      Object.assign(BOUNCE, { x: bounceX });
-    }
+    });
+  });
+
+  test('a fused preview stops at the weapon fuse', () => {
+    const fuse = WEAPONS.grenade.fuse;
+    expect(fuse).not.toBeNull();
+    withConfig(WEAPONS.grenade, 'fuse', (fuse ?? 0) / 2, () => {
+      const points = previewFlight(open, 400, 486, -0.6, 0.8, 'grenade', 0);
+      const end = simulateShot(
+        open,
+        400,
+        486,
+        -0.6,
+        0.8,
+        'grenade',
+        0,
+        WEAPONS.grenade.fuse,
+        WEAPONS.grenade.bounces,
+      );
+      const last = points.at(-1)!;
+      expect(last.x).toBeCloseTo(end.x, 5);
+      expect(last.y).toBeCloseTo(end.y, 5);
+    });
   });
 });
 
