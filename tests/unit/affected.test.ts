@@ -41,6 +41,7 @@ test('game sources run the game units and the gameplay specs', () => {
     'tests/unit/parity.test.ts',
     'tests/unit/replay.test.ts',
     'tests/unit/rope.test.ts',
+    'tests/unit/wind.test.ts',
   ]);
   expect(result.e2e).toEqual(['tests/combat.spec.ts', 'tests/jump.spec.ts', 'tests/rope.spec.ts']);
 });

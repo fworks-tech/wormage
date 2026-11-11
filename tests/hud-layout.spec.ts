@@ -45,10 +45,17 @@ const checkViewport = async (page: import('@playwright/test').Page, viewport: { 
   await expect(page.locator('.power-wrap')).toBeHidden();
   await expect(page.getByTestId('btn-fire')).toContainText('hold');
 
+  const cards = await Promise.all([
+    box(page, '[data-testid="team-panel-0"]'),
+    box(page, '[data-testid="team-panel-1"]'),
+  ]);
+  expect(Math.abs(cards[0].width - cards[1].width), 'team cards match').toBeLessThanOrEqual(1);
+  await expect(page.getByTestId('hud-wind')).toBeVisible();
+  await expect(page.getByTestId('hud-wind')).toHaveAttribute('aria-label', /^Wind: /);
+
   const top = [
     '[data-testid="team-panel-0"]',
     '[data-testid="team-panel-1"]',
-    '[data-testid="hud-wind"]',
     '[data-testid="btn-pause"]',
     '.turn-block',
   ];
@@ -134,6 +141,14 @@ test.describe('HUD layout 915x412 landscape', () => {
 test('the desktop HUD hides the touch controls and centers the weapon dock', async ({ page }) => {
   test.skip(test.info().project.name !== 'desktop', 'desktop-only layout');
   await startMatch(page);
+
+  const [mine, theirs] = await Promise.all([
+    box(page, '[data-testid="team-panel-0"]'),
+    box(page, '[data-testid="team-panel-1"]'),
+  ]);
+  expect(Math.abs(mine.width - theirs.width), 'team cards match').toBeLessThanOrEqual(1);
+  await expect(page.getByTestId('hud-wind')).toBeVisible();
+  await expect(page.getByTestId('hud-wind')).toHaveAttribute('aria-label', /^Wind: /);
 
   for (const id of ['btn-pause', 'btn-left', 'btn-right', 'btn-jump', 'btn-fire', 'btn-end-turn']) {
     await expect(page.getByTestId(id)).toBeHidden();

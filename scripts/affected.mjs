@@ -15,6 +15,7 @@ const GAME_UNIT = [
   'tests/unit/parity.test.ts',
   'tests/unit/replay.test.ts',
   'tests/unit/rope.test.ts',
+  'tests/unit/wind.test.ts',
 ];
 const GAME_E2E = ['tests/combat.spec.ts', 'tests/jump.spec.ts', 'tests/rope.spec.ts'];
 const UI_E2E = [

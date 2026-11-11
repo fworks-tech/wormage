@@ -115,6 +115,7 @@ Because the solver and the game share one integrator, the CPU never "cheats" —
 - Buttons call engine methods; no state is copied into React for writing.
 - The HUD is a pure function of `snapshot`.
 - The HUD is pointer-aware: a fine pointer hides the touch pad, Jump, pause, power, FIRE and End Turn (`Space`/drag fires, `E` ends the turn, `P` pauses; `Esc` pauses outside fullscreen); a coarse pointer keeps the full on-screen HUD.
+- Both team cards share one width (up to 330 px). Wind is a compact gauge inside the turn block: animated streaks follow the wind direction and speed, and the spoken label lives in `aria-label`.
 - Key bindings are data: `src/state/bindings.ts` owns the defaults, labels, Zod validation, reserved-code rules and swap; `src/state/storage.ts` persists them. `GameView` reads the saved map, adds fixed arrow aliases for walking and aiming, and ignores Ctrl/Meta/Alt so browser shortcuts keep working. Escape cancels capture; outside capture it closes an open Settings/Controls panel and otherwise toggles pause. Both are skipped while fullscreen, where the browser owns Escape. Escape cannot be rebound.
 - The New Game card and the pause card both open the same `SettingsDialog` and `ControlsDialog`. Settings freeze into a match at mount; bindings apply immediately.
 - Weapon cards use inline SVG art (`WeaponIcon.tsx`) instead of text glyphs, so the deck stays sharp at every DPR without an asset pipeline.

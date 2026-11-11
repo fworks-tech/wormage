@@ -749,7 +749,6 @@ html:fullscreen {
 .hud button,
 .hud .team-panel,
 .hud .turn-block,
-.hud .wind,
 .hud .power-wrap,
 .hud .ai-banner {
   pointer-events: auto;
@@ -763,11 +762,12 @@ html:fullscreen {
 }
 
 .team-panel {
+  width: 330px;
+  max-width: 100%;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 9px 12px;
-  max-width: 330px;
   backdrop-filter: blur(10px);
 }
 
@@ -908,48 +908,83 @@ html:fullscreen {
   flex-wrap: wrap;
 }
 
-.wind {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 9px 12px;
-  display: grid;
-  grid-template-columns: auto auto;
-  grid-template-areas: 'label value' 'arrow arrow';
-  gap: 4px 10px;
-  min-width: 104px;
-  backdrop-filter: blur(10px);
-}
-
-.wind-label {
-  grid-area: label;
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  color: var(--muted);
-}
-
-.wind-value {
-  grid-area: value;
-  font-size: 11px;
+.wind-gauge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 10px;
+  margin-top: 6px;
   color: var(--amber);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  text-align: right;
 }
 
-.wind-arrow {
-  grid-area: arrow;
-  display: block;
-  text-align: center;
-  font-size: 20px;
-  line-height: 1;
-  color: var(--amber);
-  transform-origin: center;
+.wind-streak {
+  width: 6px;
+  height: 6px;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  transform: rotate(45deg);
+  opacity: 0;
+  animation: wind-drift var(--wind-cycle, 1.6s) linear infinite;
 }
 
-.wind-arrow.flip {
+.wind-streak:nth-child(2) {
+  animation-delay: calc(var(--wind-cycle, 1.6s) * 0.25);
+}
+
+.wind-streak:nth-child(3) {
+  animation-delay: calc(var(--wind-cycle, 1.6s) * 0.5);
+}
+
+.wind-streak:nth-child(4) {
+  animation-delay: calc(var(--wind-cycle, 1.6s) * 0.75);
+}
+
+.wind-breeze {
+  --wind-cycle: 2.1s;
+}
+
+.wind-gust {
+  --wind-cycle: 1.2s;
+}
+
+.wind-gale {
+  --wind-cycle: 0.7s;
+}
+
+.wind-breeze .wind-streak:nth-child(n + 3),
+.wind-gust .wind-streak:nth-child(n + 4) {
+  display: none;
+}
+
+.wind-calm .wind-streak {
+  animation: none;
+  opacity: 0.28;
+}
+
+.wind-calm .wind-streak:nth-child(n + 2) {
+  display: none;
+}
+
+.wind-left {
   transform: scaleX(-1);
+}
+
+@keyframes wind-drift {
+  0% {
+    opacity: 0;
+    translate: -4px 0;
+  }
+
+  25%,
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    translate: 6px 0;
+  }
 }
 
 .pause-btn {
@@ -1537,6 +1572,7 @@ html:fullscreen {
 
   .team-panel {
     grid-area: me;
+    width: 100%;
     max-width: none;
     padding: 7px 9px;
   }
@@ -1549,19 +1585,8 @@ html:fullscreen {
     display: contents;
   }
 
-  .wind {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 50%;
-    transform: translateX(-50%);
-    grid-template-areas: 'label value' 'arrow arrow';
-    min-width: 92px;
-    padding: 5px 9px;
-    z-index: 2;
-  }
-
-  .wind-arrow {
-    font-size: 15px;
+  .wind-gauge {
+    margin: 0;
   }
 
   .pause-btn {
@@ -1818,5 +1843,11 @@ html:fullscreen {
   *::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
+  }
+
+  .wind-streak {
+    animation: none;
+    opacity: 0.75;
+    translate: 0;
   }
 }
