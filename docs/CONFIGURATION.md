@@ -94,10 +94,10 @@ Damage falloff: `max(0.22, 1 - distance / (radius + 11))`. A worm on the edge st
 
 ## Controls lifecycle
 
-1. `loadBindings()` reads localStorage and merges it over `DEFAULT_BINDINGS` through `sanitizeBindings()`.
-2. The Controls dialog (New Game card and pause card) edits a draft. Capturing a key already in use swaps the two actions; **Reset** restores the defaults.
-3. Saving persists the map and updates App state; `GameView` reads it immediately. `Escape` always pauses/closes and cannot be rebound.
-4. Storage key: `wormage.bindings.v1`.
+1. `loadBindings()` reads `wormage.bindings.v1`, parses it with Zod and merges the valid fields over `DEFAULT_BINDINGS` through `sanitizeBindings()`. Corrupt JSON, an old schema or a reserved code falls back per action instead of throwing.
+2. A binding is a `KeyboardEvent.code` of 1–32 capitalised alphanumeric characters (for example `KeyF`, `Numpad1`, `IntlBackslash`). Modifier-only codes (`Shift*`, `Control*`, `Alt*`, `Meta*`, `OS*`), the fixed movement aliases (`Arrow*`) and browser keys (`Escape`, `Tab`, `F5`, `F12`, `ContextMenu`, `Unidentified`) are rejected.
+3. The Controls dialog (New Game card and pause card) edits a draft. Capture rejects a reserved code with an inline message and stays in capture mode; `Esc` cancels capture and `Tab` cancels it to keep focus moving. Outside capture, `Esc` toggles pause except while fullscreen. A key already in use swaps the two actions; **Reset** restores the defaults.
+4. Saving persists the map and updates App state; `GameView` reads it immediately. Arrow keys remain fixed aliases for walking and aiming, so a rebind never removes them; `Ctrl`/`Meta`/`Alt` combinations stay with the browser.
 
 ## Demo network scenarios
 

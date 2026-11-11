@@ -57,6 +57,8 @@ Seeds: `/demo?seed=4242` fixes terrain generation and AI jitter so combat tests 
 | `unit/parity.test.ts` | `simulateShot`/`previewFlight` read speed, gravity, wind, lifetime, fuse and bounce damping from `WEAPONS`/`BOUNCE` |
 | `unit/fullscreen.test.ts` | `/project` is excluded, unsupported/already-fullscreen/no-DOM no-ops, a refused request resolves false, landscape only on coarse pointers |
 | `unit/manifest.test.ts` | manifest fields, icon files and PNG dimensions, and the `index.html` links |
+| `unit/bindings.test.ts` | defaults, Zod sanitize (corrupt/old schema/reserved codes), arrow aliases, duplicate swap, rejection classes, labels |
+| `unit/storage.test.ts` | empty, corrupt and old-schema localStorage fall back safely |
 | `menu.spec.ts` | root redirect, demo/project routes, menu, tabs, options validation/persistence, empty and error states, ruleset-scoped board |
 | `fullscreen.spec.ts` | fullscreen after Start and Play Again, a deliberate exit plus pause-dialog re-entry, landscape lock/unlock on touch, `/project` stays windowed |
 | `pwa.spec.ts` | the manifest link and every icon are served on both routes |
@@ -66,6 +68,7 @@ Seeds: `/demo?seed=4242` fixes terrain generation and AI jitter so combat tests 
 | `jump.spec.ts` | Jump button hop, in-air press ignored, front/back jumps, key-repeat guard, Jump stays enabled through retreat |
 | `rope.spec.ts` | HUD rope card anchors, reels in, and Jump lets go |
 | `data.spec.ts` | result screen, match registration, history/ranking visibility, persistence after refresh |
+| `settings.spec.ts` | Settings/Controls dialogs, persistence, rebind/swap/reset/cancel, reserved-key rejection, arrow aliases, paused settings apply to the next match, Restart Match |
 
 Each Playwright spec runs twice, once per project (`desktop` / `mobile`). There are no visual baselines yet; the suite asserts engine state through the instrumentation hook instead. Visual baselines are planned for M1.
 

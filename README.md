@@ -53,14 +53,16 @@ On iOS, Share → Add to Home Screen launches Wormage without Safari's chrome (m
 
 | Action | Keyboard | Touch |
 | --- | --- | --- |
-| Walk | `A` / `D` or arrows | ◀ ▶ pads |
-| Aim | `W` / `S` | ▲ ▼ pads, or tap/drag the field |
+| Walk | `A` / `D` or `←` / `→` | ◀ ▶ pads |
+| Aim | `W` / `S` or `↑` / `↓` | ▲ ▼ pads, or tap/drag the field |
 | Fire | `Space` (hold to charge) | hold **Fire**, or drag 8 px+ and release |
 | Jump | `J` (hold a direction to jump front/back; hold one in the air to steer) | **Jump**; hold ◀/▶ and tap Jump |
 | Rope | `R` (aim first; A/D swings, W/S reels, Jump lets go) | **Rope** card; tap the field to aim, tap Rope, then Jump to let go |
 | Switch weapon | `1`–`4` | weapon dock |
 | End turn | `E` | End turn |
-| Pause | `P` / `Esc` | Pause |
+| Pause | `P` (`Esc` outside fullscreen) | Pause |
+
+`A`/`D`, `W`/`S`, `J`, `R`, `Space`, `1`–`4`, `E` and `P` are rebindable from **Controls** on the New Game or pause card. Arrow keys stay fixed aliases for walking and aiming; single modifiers and browser keys cannot be assigned.
 
 Three worms per side, 100 HP each. Wipe out the other team to win. The turn timer ends your turn, not the match. Falling into water is fatal; long falls hurt. Self-damage is on, as tradition demands.
 
