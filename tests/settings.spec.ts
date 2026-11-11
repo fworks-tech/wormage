@@ -46,8 +46,12 @@ const focusedText = (page: Page) =>
   page.evaluate(() => (document.activeElement as HTMLElement | null)?.textContent?.trim() ?? '');
 
 // Escape leaves fullscreen first, so panel-close checks need a windowed match.
-const exitFullscreen = (page: Page) =>
-  page.evaluate(() => (document.fullscreenElement ? document.exitFullscreen() : Promise.resolve()));
+// Wait for the match's own fullscreen request to land before undoing it.
+const exitFullscreen = async (page: Page) => {
+  await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
+  await page.evaluate(() => document.exitFullscreen());
+  await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
+};
 
 test('Settings from the New Game menu persist into the next match', async ({ page }) => {
   await page.goto('/demo?seed=4242');
