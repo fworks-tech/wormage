@@ -58,13 +58,14 @@ Seeds: `/demo?seed=4242` fixes terrain generation and AI jitter so combat tests 
 | `unit/fullscreen.test.ts` | `/project` is excluded, unsupported/already-fullscreen/no-DOM no-ops, a refused request resolves false, landscape only on coarse pointers |
 | `unit/manifest.test.ts` | manifest fields, icon files and PNG dimensions, and the `index.html` links |
 | `unit/bindings.test.ts` | defaults, Zod sanitize (corrupt/old schema/reserved codes), arrow aliases, duplicate swap, rejection classes, labels |
+| `unit/wind.test.ts` | wind tier thresholds and direction labels used by the HUD gauge |
 | `unit/storage.test.ts` | empty, corrupt and old-schema localStorage fall back safely |
 | `menu.spec.ts` | root redirect, demo/project routes, menu, tabs, options validation/persistence, empty and error states, ruleset-scoped board |
 | `fullscreen.spec.ts` | fullscreen after Start and Play Again, a deliberate exit plus pause-dialog re-entry, landscape lock/unlock on touch, `/project` stays windowed |
 | `pwa.spec.ts` | the manifest link and every icon are served on both routes |
 | `combat.spec.ts` | firing, turn handoff, walking (keyboard and pads), weapon selection, pause/freeze, retreat window, dynamite fuse, crater carving, end turn |
 | `mobile-hud.spec.ts` | touch firing: tap/slop, deliberate drag, pointer cancel, pointer ownership, charge percentage |
-| `hud-layout.spec.ts` | 360/390/412 portrait and 915 landscape: target sizes, overlaps, Jump, compact landscape HUD |
+| `hud-layout.spec.ts` | 360/390/412 portrait and 915 landscape: target sizes, overlaps, equal team cards, Jump, compact landscape HUD |
 | `jump.spec.ts` | Jump button hop, in-air press ignored, front/back jumps, key-repeat guard, Jump stays enabled through retreat |
 | `rope.spec.ts` | HUD rope card anchors, reels in, and Jump lets go |
 | `data.spec.ts` | result screen, match registration, history/ranking visibility, persistence after refresh |

@@ -187,13 +187,20 @@ export function worldClamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-export function windLabel(wind: number): string {
+export type WindTier = 'calm' | 'breeze' | 'gust' | 'gale';
+
+/** Visual and spoken wind strength; the gauge and label read from the same tiers. */
+export function windTier(wind: number): WindTier {
   const speed = Math.abs(wind);
   if (speed < 6) return 'calm';
-  const dir = wind > 0 ? '→' : '←';
-  if (speed < 35) return `breeze ${dir}`;
-  if (speed < 75) return `gust ${dir}`;
-  return `gale ${dir}`;
+  if (speed < 35) return 'breeze';
+  if (speed < 75) return 'gust';
+  return 'gale';
+}
+
+export function windLabel(wind: number): string {
+  const tier = windTier(wind);
+  return tier === 'calm' ? tier : `${tier} ${wind > 0 ? '→' : '←'}`;
 }
 
 /** Human-readable ruleset label, mirrored in the menu and the archive tables. */

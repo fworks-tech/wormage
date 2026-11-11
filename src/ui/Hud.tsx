@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { RETREAT_SECONDS, WEAPONS, WEAPON_ORDER, windLabel } from '../game/config';
+import { RETREAT_SECONDS, WEAPONS, WEAPON_ORDER, windLabel, windTier } from '../game/config';
 import type { GameSnapshot, WeaponId } from '../game/types';
 import { WeaponIcon } from './WeaponIcon';
 
@@ -141,6 +141,18 @@ export function Hud({
               style={{ width: `${Math.max(0, countdownRatio) * 100}%` }}
             />
           </div>
+          <div
+            className={`wind-gauge wind-${windTier(snapshot.wind)}${snapshot.wind < 0 ? ' wind-left' : ''}`}
+            data-testid="hud-wind"
+            role="img"
+            aria-label={`Wind: ${windLabel(snapshot.wind)}`}
+            title={`Wind: ${windLabel(snapshot.wind)}`}
+          >
+            <span className="wind-streak" />
+            <span className="wind-streak" />
+            <span className="wind-streak" />
+            <span className="wind-streak" />
+          </div>
         </div>
 
         <div className="enemy-block">
@@ -170,13 +182,6 @@ export function Hud({
                 </span>
               ))}
             </div>
-          </div>
-          <div className="wind" data-testid="hud-wind" title="Wind pushes projectiles sideways">
-            <span className="wind-label">WIND</span>
-            <span className={`wind-arrow ${snapshot.wind < 0 ? 'flip' : ''}`}>
-              {snapshot.wind >= 0 ? '➜' : '➜'}
-            </span>
-            <span className="wind-value">{windLabel(snapshot.wind)}</span>
           </div>
           <button className="ghost-btn pause-btn" type="button" onClick={onPause} data-testid="btn-pause">
             Pause
