@@ -10,7 +10,8 @@ React renders menus, dialogs and the in-match HUD. It never owns gameplay state.
 | `MatchHistory.tsx` | the player's paginated match archive |
 | `ResultScreen.tsx` | outcome, score, stats, registration status and retry |
 | `GameView.tsx` | mounts engine + Pixi renderer, owns the loop, input, pause rules |
-| `Hud.tsx` | team panels, timer, wind, weapons, power, touch/keyboard controls |
+| `Hud.tsx` | team panels, timer, wind, weapons, power, touch controls (hidden on a fine pointer) |
+| `WeaponIcon.tsx` | inline SVG weapon and rope art shared by the HUD and the briefing arsenal |
 | `fullscreen.ts` | demo-route guard, Fullscreen API request, `fullscreenchange` state and the fullscreen-only landscape lock |
 
 ## Conventions
@@ -19,6 +20,7 @@ React renders menus, dialogs and the in-match HUD. It never owns gameplay state.
 - **No per-frame renders.** `GameView` pushes snapshots at ~10 Hz. If a new value must be shown, add it to `GameSnapshot` rather than reading the engine from a component.
 - **Accessibility is part of the UI.** Buttons have labels, the pause dialog is `aria-modal`, the HUD exposes a polite live region with turn/seconds, and keyboard focus is visible.
 - **Touch and mouse share handlers.** Pointer events drive movement pads, aim/reel pads, charge/fire, jump/air steer, the rope card and the drag-to-aim canvas gesture. On touch a tap only aims, a drag past 8 px fires, and `pointercancel` cancels instead of firing.
+- **The HUD follows the pointer.** `@media (hover: hover) and (pointer: fine)` hides touch-only controls and centers the weapon dock; the pause dialog carries the keyboard bindings.
 
 ## Where to change what
 

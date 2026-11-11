@@ -1,5 +1,27 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { RETREAT_SECONDS, WEAPONS } from '../src/game/config';
+
+const desktop = () => test.info().project.name === 'desktop';
+
+const fire = async (page: Page) => {
+  if (!desktop()) {
+    await page.getByTestId('btn-fire').click();
+    return;
+  }
+  await page.keyboard.down('Space');
+  await page.waitForTimeout(120);
+  await page.keyboard.up('Space');
+};
+
+const endTurn = async (page: Page) => {
+  if (desktop()) await page.keyboard.press('e');
+  else await page.getByTestId('btn-end-turn').click();
+};
+
+const pause = async (page: Page) => {
+  if (desktop()) await page.keyboard.press('p');
+  else await page.getByTestId('btn-pause').click();
+};
 
 type Snapshot = {
   phase: string;
@@ -53,7 +75,7 @@ test('firing runs a projectile and hands the turn to the AI', async ({ page }) =
   expect(before.activeTeam).toBe(0);
   expect(before.teams[0].hp).toBe(300);
 
-  await page.getByTestId('btn-fire').click();
+  await fire(page);
   await page.waitForTimeout(150);
   expect(['projectile', 'settle']).toContain((await snapshot(page)).phase);
 
@@ -64,13 +86,14 @@ test('firing runs a projectile and hands the turn to the AI', async ({ page }) =
 
 test('ending the turn during a shot does not cancel the projectile', async ({ page }) => {
   await startMatch(page);
-  await page.getByTestId('btn-fire').click();
+  await fire(page);
   await page.waitForFunction(() => {
     const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
     return state.phase === 'projectile';
   });
 
-  await expect(page.getByTestId('btn-end-turn')).toBeDisabled();
+  if (desktop()) await expect(page.getByTestId('btn-end-turn')).toBeHidden();
+  else await expect(page.getByTestId('btn-end-turn')).toBeDisabled();
   await page.keyboard.press('e');
 
   const during = await snapshot(page);
@@ -104,6 +127,7 @@ test('walking changes the worm x position and respects the arena edge', async ({
 });
 
 test('the on-screen walk buttons move the active worm', async ({ page }) => {
+  test.skip(desktop(), 'the desktop HUD hides the touch pad');
   await startMatch(page);
   const before = await activeX(page);
   expect(before).not.toBeNull();
@@ -123,8 +147,9 @@ test('the on-screen walk buttons move the active worm', async ({ page }) => {
 });
 
 test('the on-screen walk buttons move the worm during retreat', async ({ page }) => {
+  test.skip(desktop(), 'the desktop HUD hides the touch pad');
   await startMatch(page);
-  await page.getByTestId('btn-fire').click();
+  await fire(page);
   await page.waitForFunction(() => {
     const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
     return state.retreatLeft > 0;
@@ -176,7 +201,7 @@ test('weapon selection follows ammo and keyboard shortcuts', async ({ page }) =>
 
 test('pause freezes the turn timer until resumed', async ({ page }) => {
   await startMatch(page);
-  await page.getByTestId('btn-pause').click();
+  await pause(page);
   await expect(page.getByTestId('btn-resume')).toBeVisible();
   const frozen = (await snapshot(page)).timeLeft;
   await page.waitForTimeout(900);
@@ -192,11 +217,13 @@ test('the HUD stays inside the letterboxed arena on wide screens', async ({ page
   await startMatch(page);
 
   const bar = (1900 - (940 * 16) / 9) / 2;
-  const left = await page.getByTestId('btn-left').boundingBox();
-  expect(left!.x).toBeGreaterThanOrEqual(bar - 1);
+  const top = await page.locator('.hud-top').boundingBox();
+  expect(top!.x).toBeGreaterThanOrEqual(bar - 1);
+  expect(top!.x + top!.width).toBeLessThanOrEqual(1900 - bar + 1);
 
-  const pause = await page.getByTestId('btn-pause').boundingBox();
-  expect(pause!.x + pause!.width).toBeLessThanOrEqual(1900 - bar + 1);
+  const dock = await page.locator('.weapon-dock').boundingBox();
+  expect(dock!.x).toBeGreaterThanOrEqual(bar - 1);
+  expect(dock!.x + dock!.width).toBeLessThanOrEqual(1900 - bar + 1);
 });
 
 test('the fuse countdown shows the real fuse and scales its bar', async ({ page }) => {
@@ -205,7 +232,7 @@ test('the fuse countdown shows the real fuse and scales its bar', async ({ page 
   expect((await snapshot(page)).weapon).toBe('dynamite');
   // Pause before firing: waiting for a fuse window and then clicking races the
   // fuse itself, and a slow worker can miss the window.
-  await page.getByTestId('btn-pause').click();
+  await pause(page);
 
   // The paused loop still renders and pushes snapshots but stops calling update,
   // so this burns the frozen fuse deterministically.
@@ -239,7 +266,7 @@ test('the retreat countdown scales its bar by the retreat window, not the fuse',
   expect((await snapshot(page)).weapon).toBe('dynamite');
   // Pause before firing: waiting for the retreat window and then clicking races
   // its 3 s length, and a slow worker can miss the window entirely.
-  await page.getByTestId('btn-pause').click();
+  await pause(page);
 
   // The paused loop still renders and pushes snapshots but stops calling update,
   // so this drives the frozen engine to the explosion deterministically.
@@ -271,7 +298,7 @@ test('pausing cancels a charge instead of firing on release', async ({ page }) =
     () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().charging,
   );
 
-  await page.getByTestId('btn-pause').click();
+  await pause(page);
   await page.keyboard.up('Space');
 
   // The release happens under the pause card; nothing may fire.
@@ -283,7 +310,7 @@ test('pausing cancels a charge instead of firing on release', async ({ page }) =
 
 test('the shooter can retreat during the post-fire window', async ({ page }) => {
   await startMatch(page);
-  await page.getByTestId('btn-fire').click();
+  await fire(page);
   await page.waitForFunction(() => {
     const state = (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot();
     return state.phase === 'projectile' || state.phase === 'settle';
@@ -350,7 +377,7 @@ test('dynamite fuses down and explodes before the turn passes', async ({ page })
   const hpBefore = (await snapshot(page)).teams[0].hp;
 
   await page.getByTestId('weapon-dynamite').click();
-  await page.getByTestId('btn-fire').click();
+  await fire(page);
 
   // A dropped charge burns its fuse instead of detonating on contact with the thrower.
   const midFuse = await page.evaluate(() => {
@@ -381,7 +408,7 @@ test('dynamite fuses down and explodes before the turn passes', async ({ page })
 
 test('the AI plans, fires and hands the turn back', async ({ page }) => {
   await startMatch(page);
-  await page.getByTestId('btn-end-turn').click();
+  await endTurn(page);
   await page.waitForFunction(
     () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().turn === 2,
     undefined,
@@ -398,7 +425,7 @@ test('the AI plans, fires and hands the turn back', async ({ page }) => {
 
 test('ending the turn switches sides without damage', async ({ page }) => {
   await startMatch(page);
-  await page.getByTestId('btn-end-turn').click();
+  await endTurn(page);
   await page.waitForFunction(() => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().turn === 2, undefined, { timeout: 5000 });
   const after = await snapshot(page);
   expect(after.activeTeam).toBe(1);

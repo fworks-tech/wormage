@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { RETREAT_SECONDS, WEAPONS, WEAPON_ORDER, windLabel } from '../game/config';
 import type { GameSnapshot, WeaponId } from '../game/types';
+import { WeaponIcon } from './WeaponIcon';
 
 interface HudProps {
   snapshot: GameSnapshot;
@@ -301,7 +302,7 @@ export function Hud({
                 data-testid={`weapon-${id}`}
                 title={def.blurb}
               >
-                <span className="weapon-glyph">{def.glyph}</span>
+                <WeaponIcon id={id} />
                 <span className="weapon-name">{def.name}</span>
                 <span className="weapon-ammo">{def.ammo === null ? '∞' : count}</span>
               </button>
@@ -316,7 +317,7 @@ export function Hud({
             data-testid="btn-rope"
             title="Anchor to the aimed terrain; A/D swing, W/S reel, J lets go"
           >
-            <span className="weapon-glyph">⌁</span>
+            <WeaponIcon id="rope" />
             <span className="weapon-name">Rope</span>
             <span className="weapon-ammo">∞</span>
           </button>

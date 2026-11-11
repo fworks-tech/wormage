@@ -454,6 +454,15 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
             <p className="eyebrow">Truce</p>
             <h2>Paused</h2>
             <p className="muted">The clock, wind and fuses are frozen until you resume.</p>
+            <div className="pause-help">
+              <p className="pause-help-keyboard">
+                <kbd>A</kbd>
+                <kbd>D</kbd> walk · <kbd>W</kbd>
+                <kbd>S</kbd> aim · <kbd>Space</kbd> fire · <kbd>J</kbd> jump · <kbd>R</kbd> rope · <kbd>1–4</kbd>{' '}
+                weapons · <kbd>E</kbd> end turn · <kbd>P</kbd> pause
+              </p>
+              <p className="pause-help-touch">Drag from the worm to aim; release to fire. Hold FIRE to charge.</p>
+            </div>
             <div className="overlay-actions">
               <button type="button" className="primary-btn" onClick={() => setPause(false)} data-testid="btn-resume">
                 Resume
@@ -476,12 +485,6 @@ export function GameView({ settings, onFinish, onExit }: GameViewProps) {
         </div>
       )}
 
-      {ready && (
-        <p className="control-strip">
-          A/D walk or swing · W/S aim or reel · Space hold to fire · J jump/let go · R rope · 1-4 weapons · E end
-          turn · P pause — or drag from the worm to aim and release to fire.
-        </p>
-      )}
     </div>
   );
 }

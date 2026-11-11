@@ -455,14 +455,17 @@ kbd {
 }
 
 .weapon-glyph {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
+  padding: 3px;
   border: 1px solid var(--line);
-  border-radius: 3px;
-  color: var(--amber);
-  font-size: 14px;
+  border-radius: 4px;
+  background: rgba(232, 173, 104, 0.06);
+  transition: transform 180ms ease;
+}
+
+.arsenal-panel li:hover .weapon-glyph {
+  transform: rotate(-4deg) scale(1.06);
 }
 
 .ammo-tag {
@@ -1034,11 +1037,28 @@ html:fullscreen {
 
 .weapon-card .weapon-glyph {
   grid-area: glyph;
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
   border: 0;
-  justify-items: start;
-  font-size: 15px;
+  background: none;
+  overflow: visible;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+}
+
+.weapon-card:hover .weapon-glyph,
+.weapon-card:focus-visible .weapon-glyph {
+  transform: translateY(-1px) rotate(-3deg);
+}
+
+.weapon-active .weapon-glyph {
+  animation: weapon-bob 2.4s ease-in-out infinite;
+}
+
+@keyframes weapon-bob {
+  50% {
+    transform: translateY(-2px) rotate(3deg);
+  }
 }
 
 .weapon-name {
@@ -1155,19 +1175,6 @@ html:fullscreen {
   align-self: flex-end;
 }
 
-.control-strip {
-  position: absolute;
-  top: 92px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  color: rgba(242, 232, 213, 0.42);
-  white-space: nowrap;
-  pointer-events: none;
-}
-
 .ai-banner {
   position: absolute;
   top: 50%;
@@ -1240,6 +1247,27 @@ html:fullscreen {
   gap: 10px;
   margin-top: 12px;
   flex-wrap: wrap;
+}
+
+.pause-help {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 2;
+  color: var(--muted);
+}
+
+.pause-help p {
+  margin: 0;
+}
+
+.pause-help kbd {
+  margin-right: 2px;
+}
+
+.pause-help-touch {
+  display: none;
 }
 
 /* ---------------------------------------------------------------- result */
@@ -1359,10 +1387,6 @@ html:fullscreen {
 
   .hero-side {
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  }
-
-  .control-strip {
-    display: none;
   }
 
   .weapon-card {
@@ -1672,6 +1696,35 @@ html:fullscreen {
 
   .pause-btn {
     height: 44px;
+  }
+}
+
+/* Keyboard and mouse cover every action; a touch HUD here is only noise. */
+@media (hover: hover) and (pointer: fine) {
+  .pause-btn,
+  .move-cluster,
+  .action-cluster {
+    display: none;
+  }
+
+  .hud-bottom {
+    display: flex;
+    justify-content: center;
+  }
+
+  .weapon-dock {
+    flex: 0 1 auto;
+    width: auto;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .pause-help-keyboard {
+    display: none;
+  }
+
+  .pause-help-touch {
+    display: block;
   }
 }
 
