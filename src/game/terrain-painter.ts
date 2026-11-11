@@ -1,4 +1,4 @@
-import { WORLD_H, WORLD_W } from './config';
+import { WATER_Y, WORLD_H, WORLD_W } from './config';
 import { cosmeticRng, Terrain } from './terrain';
 
 /**
@@ -72,7 +72,7 @@ export class TerrainPainter {
       ctx.fillStyle = '#68452e';
       ctx.fill();
       ctx.beginPath();
-      ctx.ellipse(s.x, s.y - 4, Math.max(1, s.rx - 3), Math.max(1, s.ry - 5), 0, 0, Math.PI * 2);
+      ctx.ellipse(s.x, s.y - 4, s.rx - 3, s.ry - 5, 0, 0, Math.PI * 2);
       ctx.fillStyle = '#587f3d';
       ctx.fill();
     }
@@ -92,6 +92,7 @@ export class TerrainPainter {
       ctx.lineTo(bladeX + 1 + rng() * 3, y - height * 0.72);
       ctx.stroke();
     }
+    ctx.lineCap = 'butt';
 
     // Dirt texture: small pebbles, warm mineral flecks and layered strata.
     for (let i = 0; i < 900; i += 1) {
@@ -117,6 +118,14 @@ export class TerrainPainter {
       }
       ctx.stroke();
     }
+
+    // The island meets the water at WATER_Y: clear the canvas below it so the
+    // sky's water and the renderer's water layer show through. Opaque fill:
+    // destination-out erases by source alpha, and the pebble fills are translucent.
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, WATER_Y, WORLD_W, WORLD_H - WATER_Y);
+    ctx.globalCompositeOperation = 'source-over';
   }
 
   carve(x: number, y: number, radius: number): void {

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { WORLD_H, WORLD_W } from '../game/config';
-import { paintSky } from '../game/sky';
+import { paintCloudBands, paintSky } from '../game/sky';
 import { Terrain } from '../game/terrain';
 import { TerrainPainter } from '../game/terrain-painter';
 
@@ -24,6 +24,7 @@ export function MenuBackdrop() {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       paintSky(ctx);
+      paintCloudBands(ctx);
       ctx.drawImage(new TerrainPainter(new Terrain(seed)).canvas, 0, 0);
       canvas.style.opacity = '1';
     };

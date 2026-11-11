@@ -30,6 +30,14 @@ interface FloatText {
   life: number;
 }
 
+/** Per-weapon trail look; indexed by `Projectile.weapon`. */
+const PROJECTILE_TRAILS: Record<WeaponId, { color: number; size: number; life: number }> = {
+  bazooka: { color: 0xffa34d, size: 2.8, life: 0.42 },
+  grenade: { color: 0xb8d77e, size: 1.9, life: 0.32 },
+  shotgun: { color: 0xf2d8b4, size: 1.2, life: 0.12 },
+  dynamite: { color: 0xff6b5b, size: 2.2, life: 0.38 },
+};
+
 class WormView {
   readonly root = new Container();
   private readonly body = new Graphics();
@@ -498,12 +506,7 @@ export class ArenaRenderer {
         g.scale.set(blink);
       }
       if (Math.random() < 0.55) {
-        const trail = {
-          bazooka: { color: 0xffa34d, size: 2.8, life: 0.42 },
-          grenade: { color: 0xb8d77e, size: 1.9, life: 0.32 },
-          shotgun: { color: 0xf2d8b4, size: 1.2, life: 0.12 },
-          dynamite: { color: 0xff6b5b, size: 2.2, life: 0.38 },
-        }[p.weapon];
+        const trail = PROJECTILE_TRAILS[p.weapon];
         this.particles.push({
           x: p.x,
           y: p.y,
