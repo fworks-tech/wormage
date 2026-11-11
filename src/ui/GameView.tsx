@@ -4,7 +4,7 @@ import { ArenaRenderer } from '../game/renderer';
 import { SoundKit } from '../game/audio';
 import { AIM, FIXED_DT } from '../game/config';
 import type { GameSettings, GameSnapshot, WeaponId } from '../game/types';
-import type { Bindings } from '../state/bindings';
+import { MOVEMENT_ALIASES, type Bindings, type MovementAliasAction } from '../state/bindings';
 import type { SessionResult } from '../types';
 import { ControlsDialog } from './ControlsDialog';
 import { Hud } from './Hud';
@@ -13,6 +13,8 @@ import { enterDemoFullscreen, useFullscreen } from './fullscreen';
 
 /** Screen-space slop so finger jitter on a tap is not treated as a shot. */
 const DRAG_SLOP_PX = 8;
+
+const MOVEMENT_ALIAS_CODES = new Set<string>(Object.values(MOVEMENT_ALIASES));
 
 type PausePanel = 'settings' | 'controls' | null;
 
@@ -155,25 +157,28 @@ export function GameView({
         while (accumulator.current >= FIXED_DT) {
           accumulator.current -= FIXED_DT;
           const keymap = bindingsRef.current;
+          // Arrow keys stay as aliases so the documented controls survive a rebind.
+          const held = (action: MovementAliasAction) =>
+            keysRef.current.has(keymap[action]) || keysRef.current.has(MOVEMENT_ALIASES[action]);
 
           // The AI drives its own worm; player input only steers on human turns.
           if (!engine.teams[engine.activeTeam].isAi) {
             if (engine.phase === 'aim' || engine.retreatActive) {
               const hudDir = hudMoveRef.current;
               if (hudDir !== 0) engine.setMove(hudDir);
-              else if (keysRef.current.has(keymap.left)) engine.setMove(-1);
-              else if (keysRef.current.has(keymap.right)) engine.setMove(1);
+              else if (held('left')) engine.setMove(-1);
+              else if (held('right')) engine.setMove(1);
               else engine.setMove(0);
 
               if (engine.activeWorm?.rope) {
-                if (keysRef.current.has(keymap.aimUp)) engine.setReel(-1);
-                else if (keysRef.current.has(keymap.aimDown)) engine.setReel(1);
+                if (held('aimUp')) engine.setReel(-1);
+                else if (held('aimDown')) engine.setReel(1);
                 else engine.setReel(0);
               } else {
                 engine.setReel(0);
                 if (engine.phase === 'aim') {
-                  if (keysRef.current.has(keymap.aimUp)) engine.aimBy(AIM.rate * FIXED_DT);
-                  if (keysRef.current.has(keymap.aimDown)) engine.aimBy(-AIM.rate * FIXED_DT);
+                  if (held('aimUp')) engine.aimBy(AIM.rate * FIXED_DT);
+                  if (held('aimDown')) engine.aimBy(-AIM.rate * FIXED_DT);
                 }
               }
             } else {
@@ -319,7 +324,7 @@ export function GameView({
 
       if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
 
-      if ([keys.left, keys.right, keys.aimUp, keys.aimDown].includes(e.code)) {
+      if ([keys.left, keys.right, keys.aimUp, keys.aimDown].includes(e.code) || MOVEMENT_ALIAS_CODES.has(e.code)) {
         keysRef.current.add(e.code);
         return;
       }

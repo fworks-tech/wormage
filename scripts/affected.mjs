@@ -77,7 +77,7 @@ const RULES = [
   },
   {
     files: ['src/state/bindings.ts', 'src/state/storage.ts'],
-    unit: ['tests/unit/bindings.test.ts'],
+    unit: ['tests/unit/bindings.test.ts', 'tests/unit/storage.test.ts'],
     e2e: ['tests/settings.spec.ts', 'tests/menu.spec.ts'],
   },
   {

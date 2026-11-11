@@ -1352,6 +1352,17 @@ html:fullscreen {
   color: var(--muted);
 }
 
+.binding-message {
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid rgba(232, 173, 104, 0.45);
+  border-radius: 4px;
+  background: rgba(232, 173, 104, 0.08);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--amber);
+}
+
 /* ---------------------------------------------------------------- result */
 
 .result-shell {

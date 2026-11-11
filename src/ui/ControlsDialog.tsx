@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import {
   assignBinding,
   BINDING_ACTIONS,
+  bindingMessage,
   DEFAULT_BINDINGS,
   keyLabel,
+  parseKeyCode,
   type BindAction,
   type Bindings,
 } from '../state/bindings';
@@ -20,20 +22,35 @@ const GROUPS = ['Movement', 'Combat', 'System'] as const;
 export function ControlsDialog({ bindings, onSave, onClose }: ControlsDialogProps) {
   const [draft, setDraft] = useState(bindings);
   const [capturing, setCapturing] = useState<BindAction | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!capturing) return;
     const onKey = (event: KeyboardEvent) => {
-      // Capture phase so the game's window listener never sees the new key.
-      event.stopPropagation();
-      event.preventDefault();
       if (event.code === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
         setCapturing(null);
+        setNotice(null);
         return;
       }
-      if (event.code === 'Tab') return;
-      setDraft((current) => assignBinding(current, capturing, event.code));
+      if (event.code === 'Tab') {
+        // Focus navigation keeps working; Tab is never a binding.
+        setCapturing(null);
+        setNotice(null);
+        return;
+      }
+      // Capture phase so the game's window listener never sees the new key.
+      event.preventDefault();
+      event.stopPropagation();
+      const code = parseKeyCode(event.code);
+      if (!code) {
+        setNotice(bindingMessage(event.code));
+        return;
+      }
+      setDraft((current) => assignBinding(current, capturing, code));
       setCapturing(null);
+      setNotice(null);
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
@@ -44,6 +61,11 @@ export function ControlsDialog({ bindings, onSave, onClose }: ControlsDialogProp
       <p className="eyebrow">Input</p>
       <h2>Controls</h2>
       <p className="muted">Click a key, press a replacement. Esc cancels; a key already in use swaps.</p>
+      {notice && (
+        <p className="binding-message" role="status" data-testid="binding-error">
+          {notice}
+        </p>
+      )}
       <div className="binding-groups">
         {GROUPS.map((group) => (
           <section key={group} className="binding-group">
@@ -54,7 +76,10 @@ export function ControlsDialog({ bindings, onSave, onClose }: ControlsDialogProp
                 <button
                   type="button"
                   className={`binding-key ${capturing === action.id ? 'binding-capture' : ''}`}
-                  onClick={() => setCapturing(action.id)}
+                  onClick={() => {
+                    setCapturing(action.id);
+                    setNotice(null);
+                  }}
                   aria-label={`Change ${action.label}, currently ${keyLabel(draft[action.id])}`}
                   data-testid={`binding-${action.id}`}
                 >
@@ -67,7 +92,8 @@ export function ControlsDialog({ bindings, onSave, onClose }: ControlsDialogProp
       </div>
       <p className="controls-note">
         Mouse: drag from the worm to aim, release to fire. Touch: tap to aim, drag to fire, hold FIRE to charge.
-        Esc always pauses and cannot be rebound.
+        Arrow keys stay fixed movement aliases. Single modifiers and browser keys are not accepted. Escape cancels
+        capture and toggles pause outside fullscreen; it cannot be rebound.
       </p>
       <div className="overlay-actions">
         <button
