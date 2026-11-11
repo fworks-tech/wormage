@@ -129,6 +129,7 @@ export default function App() {
           saveError={register.isError}
           onRetry={() => result && submitResult(result)}
           onPlayAgain={startMatch}
+          onChangeSetup={() => setScreen('menu')}
           onMenu={() => window.location.assign('/project')}
         />
       )}

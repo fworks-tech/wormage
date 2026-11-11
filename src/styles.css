@@ -1459,33 +1459,24 @@ html:fullscreen {
   color: var(--muted);
 }
 
-.result-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.result-stats > div {
-  background: #0d1717;
-  padding: 14px 10px;
-}
-
-.result-stats dt {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.16em;
+.result-line {
+  max-width: 46ch;
+  margin: 10px auto 0;
+  font-family: var(--display);
+  font-size: clamp(15px, 2.4vw, 19px);
+  line-height: 1.35;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 6px;
+  color: var(--amber);
+  text-wrap: balance;
 }
 
-.result-stats dd {
-  font-size: 16px;
-  font-weight: 600;
+.result-meta {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
 }
 
 .save-state {
@@ -1500,11 +1491,14 @@ html:fullscreen {
 }
 
 .result-actions {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
   margin-top: 24px;
-  flex-wrap: wrap;
+}
+
+.result-actions .primary-btn {
+  grid-column: 1 / -1;
 }
 
 /* -------------------------------------------------------------- responsive */
@@ -1686,8 +1680,8 @@ html:fullscreen {
     font-size: 10px;
   }
 
-  .result-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .result-actions {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .option-row {
