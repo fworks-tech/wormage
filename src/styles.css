@@ -1324,6 +1324,7 @@ html:fullscreen {
 
 .binding-key {
   min-width: 90px;
+  min-height: 36px;
   padding: 4px 8px;
   border: 1px solid var(--line);
   border-bottom-width: 2px;

@@ -10,6 +10,7 @@ import { ControlsDialog } from './ControlsDialog';
 import { Hud } from './Hud';
 import { SettingsDialog } from './SettingsDialog';
 import { enterDemoFullscreen, useFullscreen } from './fullscreen';
+import { useDialogFocus } from './useDialogFocus';
 
 /** Screen-space slop so finger jitter on a tap is not treated as a shot. */
 const DRAG_SLOP_PX = 8;
@@ -51,6 +52,7 @@ export function GameView({
   const keysRef = useRef<Set<string>>(new Set());
   const bindingsRef = useRef(bindings);
   bindingsRef.current = bindings;
+  const pausePanelRef = useRef<PausePanel>(null);
   // HUD pointer input lives outside the keyboard set; the fixed-step loop reads it.
   const hudMoveRef = useRef<-1 | 0 | 1>(0);
   const lastUiPush = useRef(0);
@@ -65,6 +67,8 @@ export function GameView({
   const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null);
   const [paused, setPaused] = useState(false);
   const [pausePanel, setPausePanel] = useState<PausePanel>(null);
+  pausePanelRef.current = pausePanel;
+  const dialogRef = useDialogFocus<HTMLDivElement>(paused, pausePanel ?? 'root');
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fullscreen = useFullscreen();
@@ -290,6 +294,18 @@ export function GameView({
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const keys = bindingsRef.current;
+      // Esc belongs to the browser while fullscreen; pausing on the same key would
+      // resume the match the user just left.
+      if (e.code === 'Escape' && document.fullscreenElement) return;
+      if (e.code === 'Escape') {
+        e.preventDefault();
+        // A sub-panel closes first; only the pause card resumes the match.
+        if (pausePanelRef.current) setPausePanel(null);
+        else setPause(!pausedRef.current);
+        return;
+      }
       if (
         target &&
         (target.tagName === 'INPUT' ||
@@ -299,18 +315,14 @@ export function GameView({
       ) {
         return;
       }
-      // A dialog button owns its own Space/Enter activation; do not also resume.
-      if (target?.closest('.overlay') && (target.tagName === 'BUTTON' || target.tagName === 'A')) return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const keys = bindingsRef.current;
-      // Esc belongs to the browser while fullscreen; pausing on the same key would
-      // resume the match the user just left.
-      if (e.code === 'Escape' && document.fullscreenElement) return;
-      if (e.code === 'Escape' || e.code === keys.pause) {
+      if (e.code === keys.pause) {
         e.preventDefault();
-        setPause(!pausedRef.current);
+        if (pausePanelRef.current) setPausePanel(null);
+        else setPause(!pausedRef.current);
         return;
       }
+      // A dialog button owns its own Space/Enter activation; do not also resume.
+      if (target?.closest('.overlay') && (target.tagName === 'BUTTON' || target.tagName === 'A')) return;
       if (pausedRef.current) {
         if (e.code === 'Enter' || e.code === 'Space') {
           e.preventDefault();
@@ -478,10 +490,14 @@ export function GameView({
 
       {paused && (
         <div
+          ref={dialogRef}
           className="overlay pause-overlay"
           role="dialog"
           aria-modal="true"
           aria-label={pausePanel === 'settings' ? 'Settings' : pausePanel === 'controls' ? 'Controls' : 'Game paused'}
+          onClick={(event) => {
+            if (event.target === event.currentTarget && pausePanel) setPausePanel(null);
+          }}
         >
           {pausePanel === 'settings' ? (
             <SettingsDialog settings={settings} onSave={onSaveSettings} onClose={() => setPausePanel(null)} />

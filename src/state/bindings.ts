@@ -122,8 +122,20 @@ const NAMED_KEYS: Record<string, string> = {
   Space: 'Space',
   Escape: 'Esc',
   Enter: 'Enter',
+  NumpadEnter: 'Num Enter',
   Backspace: '⌫',
+  Insert: 'Ins',
+  Delete: 'Del',
   Tab: 'Tab',
+  CapsLock: 'Caps',
+  NumLock: 'Num Lock',
+  ScrollLock: 'Scroll Lock',
+  PrintScreen: 'PrtSc',
+  Pause: 'Pause',
+  Home: 'Home',
+  End: 'End',
+  PageUp: 'PgUp',
+  PageDown: 'PgDn',
   ArrowUp: '↑',
   ArrowDown: '↓',
   ArrowLeft: '←',
@@ -136,6 +148,14 @@ const NAMED_KEYS: Record<string, string> = {
   AltRight: 'R Alt',
   MetaLeft: 'Meta',
   MetaRight: 'Meta',
+  NumpadAdd: '+',
+  NumpadSubtract: '−',
+  NumpadMultiply: '*',
+  NumpadDivide: '/',
+  NumpadDecimal: '.',
+  NumpadComma: ',',
+  IntlBackslash: '\\',
+  IntlYen: '¥',
   Quote: "'",
   Semicolon: ';',
   Comma: ',',
@@ -154,7 +174,9 @@ export function keyLabel(code: string): string {
   if (code.startsWith('Key')) return code.slice(3);
   if (code.startsWith('Digit')) return code.slice(5);
   if (code.startsWith('Numpad')) return `Num ${code.slice(6)}`;
-  return code;
+  if (/^F\d{1,2}$/.test(code)) return code;
+  // Codes without a friendly name still read better as words than as identifiers.
+  return code.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
 }
 
 const STORED_BINDINGS = z.record(z.unknown());
