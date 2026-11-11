@@ -4,6 +4,8 @@ type Snapshot = {
   phase: string;
   turn: number;
   turnSeconds: number;
+  aimAngle: number;
+  charging: boolean;
   teams: Array<{ hp: number }>;
 };
 
@@ -24,8 +26,21 @@ const startMatch = async (page: Page) => {
   await page.waitForFunction(() => Boolean((window as never as { __WORMAGE__?: unknown }).__WORMAGE__));
 };
 
+const openControls = async (page: Page) => {
+  await page.goto('/demo?seed=4242');
+  await page.getByTestId('btn-controls').click();
+  await expect(page.getByTestId('controls-dialog')).toBeVisible();
+};
+
 const snapshot = (page: Page) =>
   page.evaluate(() => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot());
+
+const activeX = (page: Page) =>
+  page.evaluate(
+    () =>
+      (window as never as { __WORMAGE__: { engine: { activeWorm: { x: number } | null } } }).__WORMAGE__.engine
+        .activeWorm?.x ?? null,
+  );
 
 test('Settings from the New Game menu persist into the next match', async ({ page }) => {
   await page.goto('/demo?seed=4242');
@@ -47,6 +62,19 @@ test('Settings from the New Game menu persist into the next match', async ({ pag
   await expect(page.getByTestId('select-wind')).toHaveValue('strong');
 });
 
+test('difficulty and sound persist across a reload', async ({ page }) => {
+  await page.goto('/demo?seed=4242');
+  await page.getByTestId('btn-settings').click();
+  await page.getByTestId('select-difficulty').selectOption('elite');
+  await page.getByTestId('toggle-sound').uncheck();
+  await page.getByTestId('btn-save-settings').click();
+
+  await page.reload();
+  await page.getByTestId('btn-settings').click();
+  await expect(page.getByTestId('select-difficulty')).toHaveValue('elite');
+  await expect(page.getByTestId('toggle-sound')).not.toBeChecked();
+});
+
 test('a rebound fire key persists and fires the next match', async ({ page }) => {
   await page.goto('/demo?seed=4242');
   await page.getByTestId('btn-controls').click();
@@ -59,13 +87,137 @@ test('a rebound fire key persists and fires the next match', async ({ page }) =>
   await page.getByTestId('arena').locator('canvas').waitFor();
   await page.waitForFunction(() => Boolean((window as never as { __WORMAGE__?: unknown }).__WORMAGE__));
   await page.keyboard.down('f');
-  await page.waitForTimeout(120);
+  await page.waitForFunction(
+    () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().charging,
+  );
   await page.keyboard.up('f');
   await expect.poll(async () => (await snapshot(page)).phase).not.toBe('aim');
 
   await page.reload();
   await page.getByTestId('btn-controls').click();
   await expect(page.getByTestId('binding-fire')).toHaveText('F');
+});
+
+test('a lone modifier is rejected while capturing a binding', async ({ page }) => {
+  await openControls(page);
+  await page.getByTestId('binding-fire').click();
+  await expect(page.getByTestId('binding-fire')).toHaveText('Press a key…');
+
+  await page.keyboard.press('Control');
+  await expect(page.getByRole('status')).toHaveText(/modifier/i);
+  await expect(page.getByTestId('binding-fire')).toHaveText('Press a key…');
+
+  await page.keyboard.press('f');
+  await expect(page.getByTestId('binding-fire')).toHaveText('F');
+  await page.getByTestId('btn-save-bindings').click();
+
+  await page.reload();
+  await page.getByTestId('btn-controls').click();
+  await expect(page.getByTestId('binding-fire')).toHaveText('F');
+});
+
+test('Reset restores the defaults and saves them', async ({ page }) => {
+  await openControls(page);
+  await page.getByTestId('binding-fire').click();
+  await page.keyboard.press('f');
+  await expect(page.getByTestId('binding-fire')).toHaveText('F');
+
+  await page.getByTestId('btn-reset-bindings').click();
+  await expect(page.getByTestId('binding-fire')).toHaveText('Space');
+  await page.getByTestId('btn-save-bindings').click();
+
+  await page.reload();
+  await page.getByTestId('btn-controls').click();
+  await expect(page.getByTestId('binding-fire')).toHaveText('Space');
+});
+
+test('binding a duplicate key swaps the two actions', async ({ page }) => {
+  await openControls(page);
+  await page.getByTestId('binding-fire').click();
+  await page.keyboard.press('j');
+  await expect(page.getByTestId('binding-fire')).toHaveText('J');
+  await expect(page.getByTestId('binding-jump')).toHaveText('Space');
+  await page.getByTestId('btn-save-bindings').click();
+
+  await page.reload();
+  await page.getByTestId('btn-controls').click();
+  await expect(page.getByTestId('binding-fire')).toHaveText('J');
+  await expect(page.getByTestId('binding-jump')).toHaveText('Space');
+  await page.getByTestId('btn-close-bindings').click();
+
+  await page.getByTestId('btn-play').click();
+  await page.getByTestId('arena').locator('canvas').waitFor();
+  await page.waitForFunction(() => Boolean((window as never as { __WORMAGE__?: unknown }).__WORMAGE__));
+  await page.keyboard.down('j');
+  await page.waitForFunction(
+    () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().charging,
+  );
+  await page.keyboard.up('j');
+  await expect.poll(async () => (await snapshot(page)).phase).not.toBe('aim');
+});
+
+test('Escape cancels capture without changing the binding', async ({ page }) => {
+  await startMatch(page);
+  await page.keyboard.press('p');
+  await page.getByTestId('btn-controls').click();
+  await page.getByTestId('binding-fire').click();
+  await expect(page.getByTestId('binding-fire')).toHaveText('Press a key…');
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('binding-fire')).toHaveText('Space');
+  await expect(page.getByTestId('controls-dialog')).toBeVisible();
+  await expect(page.getByTestId('btn-resume')).toHaveCount(0);
+
+  await page.getByTestId('btn-close-bindings').click();
+  await expect(page.getByTestId('btn-resume')).toBeVisible();
+});
+
+test('arrow keys keep moving and aiming after the movement keys are rebound', async ({ page }) => {
+  await openControls(page);
+  await page.getByTestId('binding-left').click();
+  await page.keyboard.press('k');
+  await expect(page.getByTestId('binding-left')).toHaveText('K');
+  await page.getByTestId('btn-save-bindings').click();
+
+  await startMatch(page);
+  const start = (await activeX(page))!;
+  await page.keyboard.down('ArrowRight');
+  await expect.poll(async () => (await activeX(page))! - start).toBeGreaterThan(20);
+  await page.keyboard.up('ArrowRight');
+
+  const right = (await activeX(page))!;
+  await page.keyboard.down('ArrowLeft');
+  await expect.poll(async () => right - (await activeX(page))!).toBeGreaterThan(20);
+  await page.keyboard.up('ArrowLeft');
+
+  const moved = (await activeX(page))!;
+  await page.keyboard.down('k');
+  await expect.poll(async () => (await activeX(page))! - moved).toBeLessThan(-20);
+  await page.keyboard.up('k');
+
+  const angle = (await snapshot(page)).aimAngle;
+  await page.keyboard.down('ArrowUp');
+  await expect.poll(async () => (await snapshot(page)).aimAngle).toBeGreaterThan(angle);
+  await page.keyboard.up('ArrowUp');
+});
+
+test('settings saved while paused apply to the next match only', async ({ page }) => {
+  await startMatch(page);
+  expect((await snapshot(page)).turnSeconds).toBe(45);
+
+  await page.keyboard.press('p');
+  await page.getByTestId('btn-settings').click();
+  await page.getByTestId('input-turn-seconds').fill('30');
+  await page.getByTestId('btn-save-settings').click();
+  await expect(page.getByTestId('btn-restart')).toBeVisible();
+  expect((await snapshot(page)).turnSeconds).toBe(45);
+
+  await page.getByTestId('btn-restart').click();
+  await page.waitForFunction(() => {
+    const state = (window as never as { __WORMAGE__?: { snapshot: () => Snapshot } }).__WORMAGE__;
+    return state ? state.snapshot().turn === 1 && state.snapshot().turnSeconds === 30 : false;
+  });
+  expect((await snapshot(page)).turnSeconds).toBe(30);
 });
 
 test('Restart Match starts a fresh match from the pause card', async ({ page }) => {
