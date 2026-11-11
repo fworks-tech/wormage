@@ -25,6 +25,7 @@ Every gameplay number lives in `src/game/config.ts`. Balance changes should neve
 | `JUMP_REACH` | ≈58 | px | peak jump height, derived from `jumpVelocity` and `GRAVITY`; one jump is the walkable climb limit |
 | `AI.jumpWindowSeconds` | 6 | s | a blocked AI walk may keep jumping before it shoots from where it stands |
 | `AI.ropeWindowSeconds` | 4 | s | how long the AI may try to rope over a ledge before it gives up |
+| `AI.aimRadiansPerSecond` | 8.5 | rad/s | CPU reticle slew rate; the CPU fires only once the reticle matches the plan |
 | `WORM.maxHp` | 100 | HP | per worm |
 | `WORM.fallSafePx` | 150 | px | free fall before damage |
 | `WORM.fallDamagePerPx` | 0.16 | HP/px | linear after the safe distance |
@@ -54,7 +55,7 @@ Aim at terrain, then press `R` or the Rope card to attach. A/D swings, W/S reels
 
 ## Weapons
 
-`WEAPONS` is a `Record<WeaponId, WeaponDef>`; adding a weapon means adding one entry, one icon branch in `renderer.drawProjectile`, and one entry in `WEAPON_ORDER`.
+`WEAPONS` is a `Record<WeaponId, WeaponDef>`; adding a weapon means adding one entry, one icon branch in `renderer.drawProjectile`, one branch in `WormView.drawHeldWeapon` (the switch is exhaustive over `WeaponId`), and one entry in `WEAPON_ORDER`.
 
 | Property | Meaning |
 | --- | --- |

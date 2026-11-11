@@ -39,12 +39,6 @@ export class TerrainPainter {
     ctx.closePath();
     ctx.fill();
 
-    for (const s of this.terrain.shelves) {
-      ctx.beginPath();
-      ctx.ellipse(s.x, s.y, s.rx, s.ry, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
     // Grass line, with a darker underside and a sunlit edge for stronger depth.
     ctx.lineJoin = 'round';
     ctx.strokeStyle = '#3f6332';
@@ -66,16 +60,7 @@ export class TerrainPainter {
     for (let x = 0; x <= WORLD_W; x += 6) ctx.lineTo(x, surface(x));
     ctx.stroke();
 
-    for (const s of this.terrain.shelves) {
-      ctx.beginPath();
-      ctx.ellipse(s.x, s.y, s.rx, s.ry, 0, 0, Math.PI * 2);
-      ctx.fillStyle = '#68452e';
-      ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(s.x, s.y - 4, s.rx - 3, s.ry - 5, 0, 0, Math.PI * 2);
-      ctx.fillStyle = '#587f3d';
-      ctx.fill();
-    }
+    for (const s of this.terrain.shelves) this.paintShelf(s, rng);
 
     // Seeded grass tufts add a hand-painted edge without changing collision pixels.
     ctx.lineCap = 'round';
@@ -126,6 +111,85 @@ export class TerrainPainter {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, WATER_Y, WORLD_W, WORLD_H - WATER_Y);
     ctx.globalCompositeOperation = 'source-over';
+  }
+
+  /** Paint one airborne island with the same grass edge and layered earth as the main terrain. */
+  private paintShelf(s: Terrain['shelves'][number], rng: () => number): void {
+    const ctx = this.ctx;
+    const soil = ctx.createLinearGradient(s.x, s.y - s.ry, s.x, s.y + s.ry);
+    soil.addColorStop(0, '#795638');
+    soil.addColorStop(0.52, '#533723');
+    soil.addColorStop(1, '#342219');
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(s.x, s.y + 2, s.rx + 2, s.ry + 2, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(11, 17, 14, 0.3)';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(s.x, s.y, s.rx, s.ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = soil;
+    ctx.fill();
+    ctx.strokeStyle = '#38291e';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Fine rock strata are clipped to the island silhouette.
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(s.x, s.y, s.rx - 1, s.ry - 1, 0, 0, Math.PI * 2);
+    ctx.clip();
+    for (let band = 0; band < 3; band += 1) {
+      const y = s.y + 8 + band * Math.max(5, s.ry * 0.22);
+      ctx.beginPath();
+      ctx.moveTo(s.x - s.rx, y);
+      ctx.bezierCurveTo(s.x - s.rx * 0.35, y + 3, s.x + s.rx * 0.35, y - 3, s.x + s.rx, y + 1);
+      ctx.strokeStyle = band % 2 === 0 ? 'rgba(20, 17, 13, 0.22)' : 'rgba(231, 174, 119, 0.12)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // A curved grass cap follows the actual elliptical collision surface.
+    ctx.beginPath();
+    ctx.ellipse(s.x, s.y, s.rx, s.ry, 0, Math.PI, Math.PI * 2);
+    ctx.lineTo(s.x - s.rx, s.y);
+    ctx.closePath();
+    const grass = ctx.createLinearGradient(s.x, s.y - s.ry, s.x, s.y + 2);
+    grass.addColorStop(0, '#6b9845');
+    grass.addColorStop(0.72, '#4e7b38');
+    grass.addColorStop(1, '#3f6332');
+    ctx.fillStyle = grass;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(s.x, s.y, s.rx - 1, s.ry - 1, 0, Math.PI, Math.PI * 2);
+    ctx.strokeStyle = '#a2c96c';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(s.x, s.y + 3, s.rx - 2, s.ry - 3, 0, Math.PI, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(34, 66, 35, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Seeded blades make the airborne grass silhouette feel continuous with the island.
+    ctx.lineCap = 'round';
+    for (let dx = -s.rx + 9; dx < s.rx - 6; dx += 13) {
+      const x = s.x + dx + (rng() - 0.5) * 3;
+      const nx = (x - s.x) / s.rx;
+      const y = s.y - s.ry * Math.sqrt(Math.max(0, 1 - nx * nx));
+      const height = 3 + rng() * 4;
+      ctx.strokeStyle = rng() > 0.5 ? '#a5cb69' : '#547d3e';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(x, y + 2);
+      ctx.lineTo(x - 1.5, y - height);
+      ctx.moveTo(x, y + 2);
+      ctx.lineTo(x + 2, y - height * 0.65);
+      ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
+    ctx.restore();
   }
 
   carve(x: number, y: number, radius: number): void {

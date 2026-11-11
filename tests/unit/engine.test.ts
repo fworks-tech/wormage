@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { blastFalloff, GameEngine } from '../../src/game/engine';
-import { WIND_ACCEL, WEAPONS, WORM } from '../../src/game/config';
+import { AI, WIND_ACCEL, WEAPONS, WORM } from '../../src/game/config';
 import type { MatchConfig } from '../../src/game/types';
 
 const config = (overrides: Partial<MatchConfig> = {}): MatchConfig => ({
@@ -48,6 +48,48 @@ describe('engine rules without a browser', () => {
     const engine = new GameEngine(config({ wind: 'off' }));
     engine.endTurn();
     expect(engine.wind).toBe(0);
+  });
+
+  test('the CPU hides its reticle while walking, then aims before firing', () => {
+    const engine = new GameEngine(config());
+    engine.endTurn();
+    const aiWorm = engine.activeWorm;
+    expect(aiWorm).not.toBeNull();
+
+    // Start from a deliberately different angle so the aim-in animation has room.
+    aiWorm!.aimAngle = -0.1;
+
+    const maxStep = AI.aimRadiansPerSecond * DT + 1e-9;
+    let maxObservedStep = 0;
+    let movedWhileWalking = false;
+    let movedWhileAiming = false;
+    let shotAngle: number | null = null;
+    let aimBeforeShot: number | null = null;
+
+    for (let i = 0; i < 1800 && engine.activeTeam === 1 && shotAngle === null; i += 1) {
+      const before = aiWorm!.aimAngle;
+      engine.update(DT);
+      const step = Math.abs(aiWorm!.aimAngle - before);
+
+      // stepWorm walks after updateAi, so the post-update direction is the tick's direction.
+      if (engine.moveDir !== 0 && step > 1e-9) movedWhileWalking = true;
+      if (engine.aiAiming) {
+        maxObservedStep = Math.max(maxObservedStep, step);
+        if (step > 1e-9) movedWhileAiming = true;
+      }
+      const shot = engine.events.find((event) => event.type === 'fire');
+      if (shot?.type === 'fire') {
+        shotAngle = shot.angle;
+        aimBeforeShot = before;
+      }
+    }
+
+    expect(movedWhileWalking).toBe(false);
+    expect(movedWhileAiming).toBe(true);
+    expect(maxObservedStep).toBeLessThanOrEqual(maxStep);
+    expect(shotAngle).not.toBeNull();
+    // Firing must not teleport a reticle the player just watched settle.
+    expect(shotAngle).toBeCloseTo(aimBeforeShot as number, 6);
   });
 
   test('firing spends limited ammo but not the bazooka', () => {

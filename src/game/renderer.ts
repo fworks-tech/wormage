@@ -41,11 +41,13 @@ const PROJECTILE_TRAILS: Record<WeaponId, { color: number; size: number; life: n
 class WormView {
   readonly root = new Container();
   private readonly body = new Graphics();
+  private readonly heldWeapon = new Graphics();
   private readonly bar = new Graphics();
   private readonly marker = new Graphics();
   private readonly label: Text;
   private readonly hpText: Text;
   private lastFacing = 1;
+  private lastWeapon: WeaponId | null = null;
   private lastHp = -1;
   private lastActive = false;
   private bob = Math.random() * Math.PI * 2;
@@ -54,6 +56,7 @@ class WormView {
     this.body.pivot.set(0, -15);
     this.body.position.set(0, -15);
     this.root.addChild(this.body);
+    this.root.addChild(this.heldWeapon);
     this.root.addChild(this.bar);
     this.root.addChild(this.marker);
     this.label = new Text({
@@ -109,12 +112,16 @@ class WormView {
     this.lastFacing = facing;
   }
 
-  sync(worm: Worm, color: number, active: boolean, canAct: boolean, dt: number): void {
+  sync(worm: Worm, color: number, active: boolean, canAct: boolean, dt: number, weapon: WeaponId): void {
     this.root.position.set(worm.x, worm.y);
+    this.heldWeapon.position.set(0, -16);
+    this.heldWeapon.rotation = worm.aimAngle;
+    if (weapon !== this.lastWeapon) this.drawHeldWeapon(weapon);
     this.bob += dt * 4;
     if (worm.facing !== this.lastFacing) this.drawWorm(color, worm.facing);
     this.root.alpha = worm.alive ? 1 : 0;
     this.root.visible = worm.alive;
+    this.heldWeapon.visible = worm.alive && !worm.rope;
 
     this.label.visible = worm.alive;
     this.hpText.visible = worm.alive;
@@ -145,6 +152,53 @@ class WormView {
     } else {
       this.root.scale.set(1);
     }
+  }
+
+  private drawHeldWeapon(weapon: WeaponId): void {
+    const g = this.heldWeapon;
+    g.clear();
+    // All sprites point along +X; the Graphics container follows the worm's aim angle.
+    switch (weapon) {
+      case 'bazooka':
+        g.roundRect(2, -3.5, 18, 7, 2.2).fill(0x4b5b50);
+        g.stroke({ width: 1.2, color: 0x101815, alpha: 0.95 });
+        g.roundRect(5, -2.4, 12, 1.5, 0.7).fill({ color: 0xa9b99a, alpha: 0.8 });
+        g.roundRect(17, -4.5, 3.5, 9, 1).fill(0xd9caa7);
+        g.roundRect(19.5, -3.2, 2.5, 6.4, 1).fill(0x25312c);
+        g.roundRect(7, 2.5, 3.5, 5, 1).fill(0x283630);
+        g.circle(21, 0, 1.4).fill(0xffc46c);
+        break;
+      case 'shotgun':
+        g.roundRect(1, -3, 7, 6, 1.5).fill(0x805633);
+        g.roundRect(6, -4.2, 14, 2.4, 1).fill(0x394844);
+        g.roundRect(6, 1.8, 14, 2.4, 1).fill(0x394844);
+        g.roundRect(17, -4.6, 3, 9.2, 1).fill(0xd4b777);
+        g.roundRect(7, 2, 3, 4.5, 1).fill(0x503b28);
+        g.circle(20, -3, 0.8).fill(0xffe4ac);
+        g.circle(20, 3, 0.8).fill(0xffe4ac);
+        break;
+      case 'grenade':
+        g.roundRect(1, -2.5, 6, 5, 2).fill(0xd7b48a);
+        g.circle(12, 0, 5).fill(0x6f8a52);
+        g.stroke({ width: 1.2, color: 0x192117 });
+        g.moveTo(8, -2).lineTo(16, -2).stroke({ width: 1, color: 0xaec884, alpha: 0.8 });
+        g.moveTo(8, 2).lineTo(16, 2).stroke({ width: 1, color: 0xaec884, alpha: 0.8 });
+        g.rect(10.5, -7, 3, 2.5).fill(0xc9b183);
+        g.moveTo(13, -6).lineTo(16, -7).stroke({ width: 1.1, color: 0xffd166 });
+        break;
+      case 'dynamite':
+        g.roundRect(3, -4, 6, 9, 2).fill(0xa94c34);
+        g.roundRect(9, -5, 6, 10, 2).fill(0xcf6a49);
+        g.roundRect(15, -4, 5, 9, 2).fill(0xb4553a);
+        g.roundRect(2, -1.4, 18, 2.8, 1).fill(0xd9c9a8);
+        g.moveTo(12, -5).lineTo(13, -8).lineTo(15, -9).stroke({ width: 1.2, color: 0xe8ad68 });
+        g.circle(15, -9, 1.6).fill({ color: 0xffd166, alpha: 0.95 });
+        break;
+      default:
+        // A new WeaponId must be drawn here, not silently become dynamite.
+        weapon satisfies never;
+    }
+    this.lastWeapon = weapon;
   }
 
   destroy(): void {
@@ -485,7 +539,8 @@ export class ArenaRenderer {
         if (!view) continue;
         const active = worm.id === snapshot.activeWormId && !paused;
         const canAct = active && snapshot.phase === 'aim' && !team.isAi;
-        view.sync(worm, team.color, active, canAct, paused ? 0 : dt);
+        const heldWeapon = worm.id === snapshot.activeWormId ? snapshot.weapon : 'bazooka';
+        view.sync(worm, team.color, active, canAct, paused ? 0 : dt, heldWeapon);
       }
     }
 
@@ -588,6 +643,8 @@ export class ArenaRenderer {
     const activeWorm = this.engine.activeWorm;
     if (!activeWorm || snapshot.phase !== 'aim' || paused) return;
     if (activeWorm.rope) return;
+    // The CPU keeps its reticle hidden while walking; the aim animation is the tell.
+    if (this.engine.teams[snapshot.activeTeam].isAi && !this.engine.aiAiming) return;
     const weapon = WEAPONS[snapshot.weapon];
     const power = Math.max(0.14, snapshot.power);
     const angle = activeWorm.aimAngle;

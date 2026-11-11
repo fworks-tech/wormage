@@ -21,6 +21,8 @@ export const AI = {
   jumpWindowSeconds: 6,
   /** How long the AI may try to climb a ledge with the rope before it gives up. */
   ropeWindowSeconds: 4,
+  /** Maximum CPU reticle rotation speed, in radians per second. */
+  aimRadiansPerSecond: 8.5,
 } as const;
 
 export const WORM = {
