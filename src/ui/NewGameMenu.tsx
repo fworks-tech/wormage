@@ -4,6 +4,7 @@ import type { Bindings } from '../state/bindings';
 import { ControlsDialog } from './ControlsDialog';
 import { MenuBackdrop } from './MenuBackdrop';
 import { SettingsDialog } from './SettingsDialog';
+import { useDialogFocus } from './useDialogFocus';
 
 type MenuPanel = 'settings' | 'controls' | null;
 
@@ -20,15 +21,26 @@ export function NewGameMenu({ onStart, settings, onSaveSettings, bindings, onSav
   // The single-file build has no routes, so /project would leave the app.
   const hasRoutes = import.meta.env.MODE !== 'single';
   const [panel, setPanel] = useState<MenuPanel>(null);
+  const dialogRef = useDialogFocus<HTMLDivElement>(true, panel ?? 'root');
 
   return (
     <div className="menu-shell">
       <MenuBackdrop />
       <div
+        ref={dialogRef}
         className="overlay"
         role="dialog"
         aria-modal="true"
         aria-label={panel === 'settings' ? 'Settings' : panel === 'controls' ? 'Controls' : 'New game'}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape' && panel) {
+            event.preventDefault();
+            setPanel(null);
+          }
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget && panel) setPanel(null);
+        }}
       >
         {panel === 'settings' ? (
           <SettingsDialog settings={settings} onSave={onSaveSettings} onClose={() => setPanel(null)} />

@@ -42,6 +42,13 @@ const activeX = (page: Page) =>
         .activeWorm?.x ?? null,
   );
 
+const focusedText = (page: Page) =>
+  page.evaluate(() => (document.activeElement as HTMLElement | null)?.textContent?.trim() ?? '');
+
+// Escape leaves fullscreen first, so panel-close checks need a windowed match.
+const exitFullscreen = (page: Page) =>
+  page.evaluate(() => (document.fullscreenElement ? document.exitFullscreen() : Promise.resolve()));
+
 test('Settings from the New Game menu persist into the next match', async ({ page }) => {
   await page.goto('/demo?seed=4242');
   await page.getByTestId('btn-settings').click();
@@ -268,4 +275,80 @@ test('the pause card opens Settings and Controls', async ({ page }) => {
   await expect(page.getByTestId('controls-dialog')).toBeVisible();
   await page.getByTestId('btn-close-bindings').click();
   await expect(page.getByTestId('btn-resume')).toBeVisible();
+});
+
+test('Escape closes Settings back to the pause card without resuming', async ({ page }) => {
+  await startMatch(page);
+  await exitFullscreen(page);
+  await page.keyboard.press('p');
+  await page.getByTestId('btn-settings').click();
+  await expect(page.getByTestId('settings-dialog')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('settings-dialog')).toHaveCount(0);
+  await expect(page.getByTestId('btn-resume')).toBeVisible();
+
+  // A second Escape belongs to the pause card and resumes the match.
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('btn-resume')).toHaveCount(0);
+});
+
+test('Escape closes Controls back to the pause card without resuming', async ({ page }) => {
+  await startMatch(page);
+  await exitFullscreen(page);
+  await page.keyboard.press('p');
+  await page.getByTestId('btn-controls').click();
+  await expect(page.getByTestId('controls-dialog')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('controls-dialog')).toHaveCount(0);
+  await expect(page.getByTestId('btn-resume')).toBeVisible();
+});
+
+test('the pause key closes a panel instead of resuming the match', async ({ page }) => {
+  await startMatch(page);
+  await page.keyboard.press('p');
+  await page.getByTestId('btn-controls').click();
+  await expect(page.getByTestId('controls-dialog')).toBeVisible();
+
+  await page.keyboard.press('p');
+  await expect(page.getByTestId('controls-dialog')).toHaveCount(0);
+  await expect(page.getByTestId('btn-resume')).toBeVisible();
+});
+
+test('clicking the backdrop closes an open panel and keeps the match paused', async ({ page }) => {
+  await startMatch(page);
+  await page.keyboard.press('p');
+  await page.getByTestId('btn-controls').click();
+  await expect(page.getByTestId('controls-dialog')).toBeVisible();
+
+  await page.locator('.pause-overlay').click({ position: { x: 4, y: 4 } });
+  await expect(page.getByTestId('controls-dialog')).toHaveCount(0);
+  await expect(page.getByTestId('btn-resume')).toBeVisible();
+});
+
+test('focus enters the pause card and Tab wraps inside the dialog', async ({ page }) => {
+  await startMatch(page);
+  await page.keyboard.press('p');
+  await expect.poll(() => focusedText(page)).toBe('Resume');
+
+  // Shift+Tab from the first control lands on the last one, not the page.
+  await page.keyboard.press('Shift+Tab');
+  await expect.poll(() => focusedText(page)).toBe('Quit to Menu');
+
+  await page.getByTestId('btn-settings').click();
+  await expect
+    .poll(() => page.evaluate(() => Boolean(document.activeElement?.closest('[data-testid="settings-dialog"]'))))
+    .toBe(true);
+});
+
+test('Escape closes a panel on the New Game card', async ({ page }) => {
+  await page.goto('/demo?seed=4242');
+  await expect.poll(() => focusedText(page)).toBe('Start Game');
+
+  await page.getByTestId('btn-controls').click();
+  await expect(page.getByTestId('controls-dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('controls-dialog')).toHaveCount(0);
+  await expect(page.getByTestId('btn-play')).toBeVisible();
 });

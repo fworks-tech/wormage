@@ -80,4 +80,11 @@ test('key codes render as readable labels', () => {
   expect(keyLabel('ArrowUp')).toBe('↑');
   expect(keyLabel('Space')).toBe('Space');
   expect(keyLabel('Numpad7')).toBe('Num 7');
+  expect(keyLabel('NumpadAdd')).toBe('+');
+  expect(keyLabel('NumpadEnter')).toBe('Num Enter');
+  expect(keyLabel('IntlBackslash')).toBe('\\');
+  expect(keyLabel('F8')).toBe('F8');
+  // Codes with no friendly name still avoid leaking the raw identifier.
+  expect(keyLabel('BrowserBack')).toBe('Browser Back');
+  expect(keyLabel('IntlRo')).toBe('Intl Ro');
 });
