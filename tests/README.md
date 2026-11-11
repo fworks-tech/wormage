@@ -68,7 +68,7 @@ Seeds: `/demo?seed=4242` fixes terrain generation and AI jitter so combat tests 
 | `jump.spec.ts` | Jump button hop, in-air press ignored, front/back jumps, key-repeat guard, Jump stays enabled through retreat |
 | `rope.spec.ts` | HUD rope card anchors, reels in, and Jump lets go |
 | `data.spec.ts` | result screen, match registration, history/ranking visibility, persistence after refresh |
-| `settings.spec.ts` | Settings/Controls dialogs, persistence, rebind/swap/reset/cancel, reserved-key rejection, arrow aliases, paused settings apply to the next match, Restart Match, focus trap, Escape and backdrop close panels |
+| `settings.spec.ts` | Settings/Controls dialogs, persistence, rebind/swap/reset/cancel, reserved-key rejection, arrow aliases, paused settings apply to the next match, Restart Match, focus trap and restore, focus pulled back from behind the dialog, Escape/backdrop/fullscreen close rules |
 
 Each Playwright spec runs twice, once per project (`desktop` / `mobile`). There are no visual baselines yet; the suite asserts engine state through the instrumentation hook instead. Visual baselines are planned for M1.
 

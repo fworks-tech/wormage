@@ -68,6 +68,9 @@ export function GameView({
   const [paused, setPaused] = useState(false);
   const [pausePanel, setPausePanel] = useState<PausePanel>(null);
   pausePanelRef.current = pausePanel;
+  // The card unmounts while a panel is open; its button takes focus back afterwards.
+  const lastPanel = useRef<PausePanel>(null);
+  if (pausePanel) lastPanel.current = pausePanel;
   const dialogRef = useDialogFocus<HTMLDivElement>(paused, pausePanel ?? 'root');
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -516,6 +519,7 @@ export function GameView({
                   type="button"
                   className="ghost-btn"
                   data-testid="btn-controls"
+                  autoFocus={lastPanel.current === 'controls'}
                   onClick={() => setPausePanel('controls')}
                 >
                   Controls
@@ -524,6 +528,7 @@ export function GameView({
                   type="button"
                   className="ghost-btn"
                   data-testid="btn-settings"
+                  autoFocus={lastPanel.current === 'settings'}
                   onClick={() => setPausePanel('settings')}
                 >
                   Settings
