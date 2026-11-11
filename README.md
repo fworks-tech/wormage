@@ -6,7 +6,7 @@ A turn-based artillery duel in the browser: two teams of three worms, one destru
 
 **Live demo:** [wormage.flabs.tech](https://wormage.flabs.tech).
 
-<img width="1917" height="1078" alt="image" src="https://github.com/user-attachments/assets/62de8f7d-f986-46e4-bebe-5c45d4836c5a" />
+<img width="1917" height="1078" alt="image" src="https://github.com/user-attachments/assets/1c5caf5b-48c6-48a4-8bba-58374fc7b452" />
 
 ## Why an artillery game
 
