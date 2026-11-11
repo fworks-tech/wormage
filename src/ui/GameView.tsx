@@ -22,6 +22,7 @@ interface GameViewProps {
   onSaveSettings: (settings: GameSettings) => void;
   onSaveBindings: (bindings: Bindings) => void;
   onFinish: (result: SessionResult) => void;
+  onRestart: () => void;
   onExit: () => void;
 }
 
@@ -35,6 +36,7 @@ export function GameView({
   onSaveSettings,
   onSaveBindings,
   onFinish,
+  onRestart,
   onExit,
 }: GameViewProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -485,17 +487,9 @@ export function GameView({
               <p className="eyebrow">Truce</p>
               <h2>Paused</h2>
               <p className="muted">The clock, wind and fuses are frozen until you resume.</p>
-              <div className="overlay-actions">
+              <div className="overlay-actions overlay-actions-stacked">
                 <button type="button" className="primary-btn" onClick={() => setPause(false)} data-testid="btn-resume">
                   Resume
-                </button>
-                <button
-                  type="button"
-                  className="ghost-btn"
-                  data-testid="btn-settings"
-                  onClick={() => setPausePanel('settings')}
-                >
-                  Settings
                 </button>
                 <button
                   type="button"
@@ -504,6 +498,14 @@ export function GameView({
                   onClick={() => setPausePanel('controls')}
                 >
                   Controls
+                </button>
+                <button
+                  type="button"
+                  className="ghost-btn"
+                  data-testid="btn-settings"
+                  onClick={() => setPausePanel('settings')}
+                >
+                  Settings
                 </button>
                 {fullscreen.supported && !fullscreen.active && (
                   <button
@@ -515,8 +517,11 @@ export function GameView({
                     Fullscreen
                   </button>
                 )}
+                <button type="button" className="ghost-btn" data-testid="btn-restart" onClick={onRestart}>
+                  Restart Match
+                </button>
                 <button type="button" className="ghost-btn" onClick={onExit}>
-                  Quit to menu
+                  Quit to Menu
                 </button>
               </div>
             </div>

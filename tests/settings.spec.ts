@@ -1,6 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 
-type Snapshot = { phase: string; turnSeconds: number };
+type Snapshot = {
+  phase: string;
+  turn: number;
+  turnSeconds: number;
+  teams: Array<{ hp: number }>;
+};
 
 test.beforeEach(async ({ page }) => {
   // Clear once per tab so a reload can prove persistence.
@@ -61,6 +66,40 @@ test('a rebound fire key persists and fires the next match', async ({ page }) =>
   await page.reload();
   await page.getByTestId('btn-controls').click();
   await expect(page.getByTestId('binding-fire')).toHaveText('F');
+});
+
+test('Restart Match starts a fresh match from the pause card', async ({ page }) => {
+  await startMatch(page);
+  await page.keyboard.press('e');
+  await page.waitForFunction(
+    () => (window as never as { __WORMAGE__: { snapshot: () => Snapshot } }).__WORMAGE__.snapshot().turn === 2,
+    undefined,
+    { timeout: 5000 },
+  );
+
+  await page.keyboard.press('p');
+  await page.getByTestId('btn-restart').click();
+  await page.waitForFunction(() => {
+    const state = (window as never as { __WORMAGE__?: { snapshot: () => Snapshot } }).__WORMAGE__;
+    return state ? state.snapshot().turn === 1 : false;
+  });
+
+  const after = await snapshot(page);
+  expect(after.turn).toBe(1);
+  expect(after.teams[0].hp).toBe(300);
+  expect(after.teams[1].hp).toBe(300);
+});
+
+test('the pause card stays inside a landscape viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 915, height: 412 });
+  await startMatch(page);
+  await page.keyboard.press('p');
+
+  const card = await page.locator('.pause-overlay .overlay-card').boundingBox();
+  expect(card!.y).toBeGreaterThanOrEqual(20);
+  expect(card!.y + card!.height).toBeLessThanOrEqual(392);
+  await page.getByTestId('btn-restart').scrollIntoViewIfNeeded();
+  await expect(page.getByTestId('btn-restart')).toBeVisible();
 });
 
 test('the pause card opens Settings and Controls', async ({ page }) => {

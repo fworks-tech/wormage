@@ -1225,6 +1225,8 @@ html:fullscreen {
 
 .overlay-card {
   width: min(420px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
   background: var(--panel-solid);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1249,6 +1251,16 @@ html:fullscreen {
   flex-wrap: wrap;
 }
 
+.overlay-actions-stacked {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: stretch;
+}
+
+.overlay-actions-stacked > * {
+  width: 100%;
+}
+
 .dialog-form {
   text-align: left;
 }
@@ -1269,8 +1281,6 @@ html:fullscreen {
 
 .controls-dialog {
   width: min(520px, 100%);
-  max-height: calc(100dvh - 40px);
-  overflow-y: auto;
   padding: 22px 24px;
   gap: 8px;
   text-align: left;

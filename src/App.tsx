@@ -116,6 +116,7 @@ export default function App() {
           onSaveSettings={handleSaveSettings}
           onSaveBindings={handleSaveBindings}
           onFinish={handleFinish}
+          onRestart={startMatch}
           onExit={() => setScreen('menu')}
         />
       )}
