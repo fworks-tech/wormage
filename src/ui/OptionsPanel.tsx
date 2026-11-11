@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { DIFFICULTY, TURN_SECONDS } from '../game/config';
-import type { Difficulty, GameSettings, WindSetting } from '../game/types';
+import type { GameSettings } from '../game/types';
 import { getScenario, resetMockData, setScenario } from '../api/mockServer';
 import type { MockScenario } from '../api/types';
+import { GameSettingsFields } from './GameSettingsFields';
 
 interface OptionsPanelProps {
   settings: GameSettings;
@@ -16,13 +16,6 @@ export function OptionsPanel({ settings, onSave, onClose }: OptionsPanelProps) {
   const [saved, setSaved] = useState(false);
   const [resetNote, setResetNote] = useState<string | null>(null);
 
-  const inputId = 'turn-seconds';
-
-  const update = <K extends keyof GameSettings>(key: K, value: GameSettings[K]) => {
-    setDraft((prev) => ({ ...prev, [key]: value }));
-    setSaved(false);
-  };
-
   return (
     <div className="panel options-panel">
       <header className="panel-head">
@@ -35,77 +28,13 @@ export function OptionsPanel({ settings, onSave, onClose }: OptionsPanelProps) {
         </button>
       </header>
 
-      <div className="option-row">
-        <label htmlFor={inputId}>
-          <span>Turn timer</span>
-          <small>Seconds per turn. Longer turns reward repositioning.</small>
-        </label>
-        <div className="range-field">
-          <input
-            id={inputId}
-            type="range"
-            min={TURN_SECONDS.min}
-            max={TURN_SECONDS.max}
-            step={TURN_SECONDS.step}
-            value={draft.turnSeconds}
-            onChange={(e) => update('turnSeconds', Number(e.target.value))}
-            data-testid="input-turn-seconds"
-          />
-          <output className="mono">{draft.turnSeconds}s</output>
-        </div>
-      </div>
-
-      <div className="option-row">
-        <label htmlFor="wind">
-          <span>Wind</span>
-          <small>Gusts bend every arcing shot. Off for pure geometry.</small>
-        </label>
-        <select
-          id="wind"
-          value={draft.wind}
-          onChange={(e) => update('wind', e.target.value as WindSetting)}
-          data-testid="select-wind"
-        >
-          <option value="off">Off</option>
-          <option value="light">Light</option>
-          <option value="strong">Strong</option>
-        </select>
-      </div>
-
-      <div className="option-row">
-        <label htmlFor="difficulty">
-          <span>Enemy skill</span>
-          <small>{DIFFICULTY[draft.difficulty].blurb}</small>
-        </label>
-        <select
-          id="difficulty"
-          value={draft.difficulty}
-          onChange={(e) => update('difficulty', e.target.value as Difficulty)}
-          data-testid="select-difficulty"
-        >
-          {(Object.keys(DIFFICULTY) as Difficulty[]).map((key) => (
-            <option key={key} value={key}>
-              {DIFFICULTY[key].label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="option-row">
-        <label htmlFor="sound">
-          <span>Sound</span>
-          <small>Synthesized effects. No audio files, no downloads.</small>
-        </label>
-        <label className="switch">
-          <input
-            id="sound"
-            type="checkbox"
-            checked={draft.sound}
-            onChange={(e) => update('sound', e.target.checked)}
-          />
-          <span>{draft.sound ? 'On' : 'Off'}</span>
-        </label>
-      </div>
+      <GameSettingsFields
+        settings={draft}
+        onChange={(next) => {
+          setDraft(next);
+          setSaved(false);
+        }}
+      />
 
       <div className="option-row option-row-split">
         <label htmlFor="scenario">

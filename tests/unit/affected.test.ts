@@ -14,7 +14,7 @@ test('a docs-only change runs no tests', () => {
 });
 
 test('a narrow UI change runs only the specs that can reach it', () => {
-  expect(selection(['src/ui/OptionsPanel.tsx']).e2e).toEqual(['tests/menu.spec.ts']);
+  expect(selection(['src/ui/OptionsPanel.tsx']).e2e).toEqual(['tests/menu.spec.ts', 'tests/settings.spec.ts']);
   expect(selection(['src/ui/MainMenu.tsx']).e2e).toEqual([
     'tests/data.spec.ts',
     'tests/fullscreen.spec.ts',

@@ -151,5 +151,5 @@ test('the desktop HUD hides the touch controls and centers the weapon dock', asy
 
   await page.keyboard.press('p');
   await expect(page.getByTestId('btn-resume')).toBeVisible();
-  await expect(page.locator('.pause-help-keyboard')).toBeVisible();
+  await expect(page.getByTestId('btn-controls')).toBeVisible();
 });

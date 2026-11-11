@@ -27,6 +27,7 @@ const UI_E2E = [
   'tests/mobile-hud.spec.ts',
   'tests/pwa.spec.ts',
   'tests/rope.spec.ts',
+  'tests/settings.spec.ts',
 ];
 
 const FULL_FILES = [
@@ -53,7 +54,7 @@ const RULES = [
   {
     files: ['src/ui/GameView.tsx'],
     unit: [],
-    e2e: ['tests/combat.spec.ts', 'tests/fullscreen.spec.ts', 'tests/jump.spec.ts', 'tests/mobile-hud.spec.ts', 'tests/hud-layout.spec.ts', 'tests/data.spec.ts', 'tests/rope.spec.ts'],
+    e2e: ['tests/combat.spec.ts', 'tests/fullscreen.spec.ts', 'tests/jump.spec.ts', 'tests/mobile-hud.spec.ts', 'tests/hud-layout.spec.ts', 'tests/data.spec.ts', 'tests/rope.spec.ts', 'tests/settings.spec.ts'],
   },
   {
     files: ['src/ui/Hud.tsx'],
@@ -68,11 +69,16 @@ const RULES = [
   { files: ['src/ui/MainMenu.tsx'], unit: [], e2e: ['tests/data.spec.ts', 'tests/fullscreen.spec.ts', 'tests/menu.spec.ts'] },
   // Every gameplay spec starts by clicking Start Game on this screen.
   { files: ['src/ui/NewGameMenu.tsx'], unit: [], e2e: UI_E2E },
-  { files: ['src/ui/OptionsPanel.tsx'], unit: [], e2e: ['tests/menu.spec.ts'] },
+  { files: ['src/ui/OptionsPanel.tsx'], unit: [], e2e: ['tests/menu.spec.ts', 'tests/settings.spec.ts'] },
   {
     files: ['src/ui/Leaderboard.tsx', 'src/ui/MatchHistory.tsx', 'src/ui/ResultScreen.tsx'],
     unit: [],
     e2e: ['tests/data.spec.ts', 'tests/menu.spec.ts'],
+  },
+  {
+    files: ['src/state/bindings.ts', 'src/state/storage.ts'],
+    unit: ['tests/unit/bindings.test.ts', 'tests/unit/storage.test.ts'],
+    e2e: ['tests/settings.spec.ts', 'tests/menu.spec.ts'],
   },
   {
     dirs: ['src/api/', 'src/mocks/', 'src/state/'],
