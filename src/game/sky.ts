@@ -1,8 +1,64 @@
 import { WATER_Y, WORLD_H, WORLD_W } from './config';
 
+type SkylineRect = readonly [x: number, y: number, width: number, height: number];
+
 /**
- * Paints the arena sky, sun, distant hills and water into a world-sized
- * context. Shared by the match renderer and the menu backdrop.
+ * The sky canvas sits behind the terrain sprite, so the whole silhouette is
+ * authored 120 px higher to clear the generated island surface. `sky.test.ts`
+ * keeps that clearance honest across seeds.
+ */
+export const SKYLINE_OFFSET = -120;
+
+/** Industrial blocks, tallest stacks at x 178 and x 1088. */
+export const SKYLINE_BLOCKS: readonly SkylineRect[] = [
+  [150, 587, 124, 86],
+  [165, 565, 43, 108],
+  [178, 526, 16, 147],
+  [214, 548, 24, 125],
+  [1006, 578, 142, 95],
+  [1024, 548, 30, 125],
+  [1088, 534, 17, 139],
+  [1120, 560, 20, 113],
+  [260, 610, 46, 63],
+  [970, 605, 50, 68],
+];
+
+const SKYLINE_CAPS: readonly SkylineRect[] = [
+  [201, 582, 57, 5],
+  [1052, 574, 37, 5],
+  [174, 523, 24, 5],
+  [1084, 531, 25, 5],
+];
+
+const SKYLINE_LIGHTS: readonly SkylineRect[] = [
+  [181, 553, 4, 5],
+  [181, 568, 4, 5],
+  [1032, 566, 5, 5],
+  [1032, 582, 5, 5],
+  [1094, 552, 5, 5],
+];
+
+/**
+ * Thin bands for the static sky. The match animates its own clouds in the
+ * renderer, so only the menu backdrop calls this.
+ */
+export function paintCloudBands(ctx: CanvasRenderingContext2D): void {
+  ctx.fillStyle = 'rgba(197, 190, 159, 0.075)';
+  for (let i = 0; i < 6; i += 1) {
+    const x = 90 + i * 213;
+    const y = 170 + (i % 3) * 43;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 62 + (i % 2) * 28, 4 + (i % 3), -0.035, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + 34, y + 8, 30, 2.5, -0.035, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/**
+ * Paints the arena sky, sun, distant hills, skyline and water into a
+ * world-sized context. Shared by the match renderer and the menu backdrop.
  */
 export function paintSky(ctx: CanvasRenderingContext2D): void {
   ctx.save();
@@ -52,30 +108,12 @@ export function paintSky(ctx: CanvasRenderingContext2D): void {
 
   // A restrained Rustbelt skyline gives the arena a place-specific silhouette.
   ctx.save();
-  ctx.translate(0, -120);
+  ctx.translate(0, SKYLINE_OFFSET);
   ctx.fillStyle = 'rgba(12, 24, 25, 0.62)';
-  ctx.fillRect(150, 587, 124, 86);
-  ctx.fillRect(165, 565, 43, 108);
-  ctx.fillRect(178, 526, 16, 147);
-  ctx.fillRect(214, 548, 24, 125);
-  ctx.fillRect(1006, 578, 142, 95);
-  ctx.fillRect(1024, 548, 30, 125);
-  ctx.fillRect(1088, 534, 17, 139);
-  ctx.fillRect(1120, 560, 20, 113);
-  ctx.fillRect(260, 610, 46, 63);
-  ctx.fillRect(970, 605, 50, 68);
-
-  // Catwalks and stack caps make the silhouette read as old industrial ruins.
-  ctx.fillRect(201, 582, 57, 5);
-  ctx.fillRect(1052, 574, 37, 5);
-  ctx.fillRect(174, 523, 24, 5);
-  ctx.fillRect(1084, 531, 25, 5);
+  for (const [x, y, w, h] of [...SKYLINE_BLOCKS, ...SKYLINE_CAPS]) ctx.fillRect(x, y, w, h);
+  // Lit windows keep the silhouette from reading as another terrain outline.
   ctx.fillStyle = 'rgba(241, 166, 91, 0.4)';
-  ctx.fillRect(181, 553, 4, 5);
-  ctx.fillRect(181, 568, 4, 5);
-  ctx.fillRect(1032, 566, 5, 5);
-  ctx.fillRect(1032, 582, 5, 5);
-  ctx.fillRect(1094, 552, 5, 5);
+  for (const [x, y, w, h] of SKYLINE_LIGHTS) ctx.fillRect(x, y, w, h);
   ctx.restore();
 
   // Water body and subtle sunset reflections.
@@ -88,7 +126,7 @@ export function paintSky(ctx: CanvasRenderingContext2D): void {
 
   const reflection = ctx.createLinearGradient(690, 0, 1110, 0);
   reflection.addColorStop(0, 'rgba(255, 190, 110, 0)');
-  reflection.addColorStop(0.5, 'rgba(255, 190, 110, 0.11)');
+  reflection.addColorStop(0.5, 'rgba(255, 190, 110, 0.22)');
   reflection.addColorStop(1, 'rgba(255, 190, 110, 0)');
   ctx.fillStyle = reflection;
   ctx.fillRect(0, WATER_Y, WORLD_W, WORLD_H - WATER_Y);

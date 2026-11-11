@@ -57,7 +57,7 @@ renderer.render(dt, paused);
 The island exists twice, in two classes:
 
 1. **Collision:** `Terrain` (`terrain.ts`) owns the `Uint8Array` bitmask at 4 px resolution (320 × 180 cells), generation, `isSolid`, `groundY` and crater carving. It imports no DOM, so the engine can be constructed in Node.
-2. **Rendering:** `TerrainPainter` (`terrain-painter.ts`) owns the 1280 × 720 offscreen canvas painted once (gradient soil, grass, pebbles, strata, two floating shelves). Pixi samples it as a `Texture`.
+2. **Rendering:** `TerrainPainter` (`terrain-painter.ts`) owns the 1280 × 720 offscreen canvas painted once (gradient soil, grass tufts, pebbles, strata, two floating shelves), cleared below `WATER_Y` so the water layers show through. Pixi samples it as a `Texture`.
 
 Destruction (`Terrain.carve`) zeroes the mask circle, then fires `onCarve`. The renderer hands those coordinates to `TerrainPainter`, which punches the circle out of the canvas with `destination-out`, paints a scorched rim clipped to the remaining dirt (`source-atop`), and refreshes the GPU texture.
 
@@ -99,7 +99,7 @@ Because the solver and the game share one integrator, the CPU never "cheats" —
 
 ## 6. Rendering
 
-`ArenaRenderer` builds, in order: sky canvas (gradient, sun, hills, water reflection), water graphics, terrain sprite, projectile graphics, worms, FX, aim layer, vignette and drifting clouds.
+`ArenaRenderer` builds, in order: sky canvas (gradient, sun, hills, industrial skyline, water reflection), water graphics, terrain sprite, projectile graphics, worms, FX, aim layer, vignette and drifting clouds. `paintSky` also backs the menu backdrop, which adds the static cloud bands the match replaces with drifting ones.
 
 - Worms are `Graphics` built once per worm, with a redrawn HP bar only when HP or active state changes. The rope is a single line from the chest to the anchor, drawn in the aim layer; the aim preview hides while the worm is attached.
 - Particles are plain objects integrated in `render` and drawn into a single cleared `Graphics` per frame (sparks, smoke, dirt, splashes, shockwave rings), capped at 420.

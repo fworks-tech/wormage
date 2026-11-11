@@ -445,8 +445,10 @@ test('carving terrain punches a hole in the canvas instead of tinting it', async
     const ctx = state.painter.canvas.getContext('2d');
     if (!ctx) throw new Error('2D canvas is not available');
     const alphaAt = (x: number, y: number) => ctx.getImageData(x, y, 1, 1).data[3];
-    return { crater: alphaAt(640, 560), ground: alphaAt(640, 660) };
+    return { crater: alphaAt(640, 560), ground: alphaAt(640, 660), water: alphaAt(640, 700) };
   });
   expect(alpha.crater).toBe(0);
   expect(alpha.ground).toBe(255);
+  // The painter stops at the waterline so the sky's water shows through.
+  expect(alpha.water).toBe(0);
 });
