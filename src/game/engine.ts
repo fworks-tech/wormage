@@ -155,6 +155,20 @@ export class GameEngine {
     return this.retreatTimer > 0 && (this.phase === 'projectile' || this.phase === 'settle');
   }
 
+  /** True while the CPU stands still and visibly slews its reticle to the plan. */
+  get aiAiming(): boolean {
+    const worm = this.activeWorm;
+    return (
+      worm !== null &&
+      this.teams[this.activeTeam].isAi &&
+      this.phase === 'aim' &&
+      !this.hasFired &&
+      this.aiPlan !== null &&
+      this.moveDir === 0 &&
+      !worm.rope
+    );
+  }
+
   private beginTurn(first = false): void {
     const team = this.teams[this.activeTeam];
     const next = this.nextAliveWorm(team);
@@ -374,7 +388,9 @@ export class GameEngine {
     if (!worm || !worm.alive || this.phase === 'gameover' || !worm.onGround) return;
     worm.vx = dir * WORM.jumpPush;
     worm.vy = -WORM.jumpVelocity;
-    if (dir !== 0 && worm.facing !== dir) {
+    const keepPlannedAim =
+      this.teams[worm.teamId].isAi && worm.id === this.activeWormId && this.aiPlan !== null;
+    if (dir !== 0 && worm.facing !== dir && !keepPlannedAim) {
       worm.facing = dir;
       worm.aimAngle = mirrorAngle(worm.aimAngle);
     }
@@ -586,6 +602,7 @@ export class GameEngine {
       return;
     }
     const isActive = worm.id === this.activeWormId;
+    const keepPlannedAim = isActive && this.teams[worm.teamId].isAi && this.aiPlan !== null;
     const canWalk =
       isActive &&
       worm.onGround &&
@@ -602,7 +619,7 @@ export class GameEngine {
       const slope = ahead === null ? null : ahead - worm.y;
       if (!bodyBlocked && (slope === null || slope <= 14)) {
         worm.x = nx;
-        if (worm.facing !== dir) {
+        if (worm.facing !== dir && !keepPlannedAim) {
           worm.facing = dir as 1 | -1;
           worm.aimAngle = mirrorAngle(worm.aimAngle);
         }
@@ -822,6 +839,15 @@ export class GameEngine {
     this.power = power;
   }
 
+  /** Slew the CPU reticle toward its selected shot instead of teleporting it at fire time. */
+  private steerAiAim(angle: number, power: number, dt: number): void {
+    const worm = this.activeWorm;
+    if (!worm) return;
+    const delta = clampAngle(angle) - worm.aimAngle;
+    const step = Math.min(Math.abs(delta), AI.aimRadiansPerSecond * dt);
+    this.aimAt(worm.aimAngle + Math.sign(delta) * step, power);
+  }
+
   /**
    * The AI walks to its firing spot, fires the planned weapon, then keeps
    * walking to its retreat spot while the post-fire window is open.
@@ -885,6 +911,8 @@ export class GameEngine {
     }
 
     const plan = this.aiPlan;
+    // Keep the selected weapon visible while the CPU moves into firing position.
+    this.weapon = plan.weapon;
     const distance = plan.fireX - worm.x;
     const planGround = this.terrain.groundY(plan.fireX, Math.max(0, worm.y - ROPE.range - 12), WATER_Y);
     const planInReach = planGround !== null && worm.y - planGround <= JUMP_REACH;
@@ -977,8 +1005,18 @@ export class GameEngine {
           this.rng,
           bodies,
         );
+        // Retarget once, then give the visible reticle time to reach this fallback shot.
+        this.aiPlan = {
+          ...plan,
+          weapon: 'bazooka',
+          fireX: worm.x,
+          fireY: worm.y,
+          angle: clampAngle(shot.angle),
+          power: shot.power,
+        };
         this.weapon = 'bazooka';
-        this.aimAt(shot.angle, shot.power);
+        this.moveDir = 0;
+        return;
       }
       this.aiThinking = false;
       this.fire();
@@ -986,8 +1024,9 @@ export class GameEngine {
     }
 
     this.moveDir = 0;
+    // update() slews the reticle each frame; never fire along a different angle.
+    if (Math.abs(clampAngle(plan.angle) - worm.aimAngle) > 1e-6) return;
     this.weapon = plan.weapon;
-    this.aimAt(plan.angle, plan.power);
     this.aiThinking = false;
     this.fire();
   }
@@ -1009,6 +1048,9 @@ export class GameEngine {
     if (this.teams[this.activeTeam].isAi) this.updateAi(dt);
 
     for (const t of this.teams) for (const w of t.worms) this.stepWorm(w, dt);
+
+    // Only aim once the CPU stops: the animation is the tell that it is about to fire.
+    if (this.aiAiming && this.aiPlan) this.steerAiAim(this.aiPlan.angle, this.aiPlan.power, dt);
 
     if (this.phase === 'projectile') {
       this.stepProjectiles(dt);

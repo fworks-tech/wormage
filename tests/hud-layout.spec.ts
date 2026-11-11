@@ -52,6 +52,9 @@ const checkViewport = async (page: import('@playwright/test').Page, viewport: { 
   expect(Math.abs(cards[0].width - cards[1].width), 'team cards match').toBeLessThanOrEqual(1);
   await expect(page.getByTestId('hud-wind')).toBeVisible();
   await expect(page.getByTestId('hud-wind')).toHaveAttribute('aria-label', /^Wind: /);
+  const windGauge = await box(page, '[data-testid="hud-wind"]');
+  expect(windGauge.width, 'wind gauge width').toBeLessThanOrEqual(89);
+  expect(windGauge.height, 'wind gauge height').toBeLessThanOrEqual(26);
 
   const top = [
     '[data-testid="team-panel-0"]',
@@ -147,8 +150,26 @@ test('the desktop HUD hides the touch controls and centers the weapon dock', asy
     box(page, '[data-testid="team-panel-1"]'),
   ]);
   expect(Math.abs(mine.width - theirs.width), 'team cards match').toBeLessThanOrEqual(1);
-  await expect(page.getByTestId('hud-wind')).toBeVisible();
-  await expect(page.getByTestId('hud-wind')).toHaveAttribute('aria-label', /^Wind: /);
+  const gauge = page.getByTestId('hud-wind');
+  await expect(gauge).toBeVisible();
+
+  // One ribbon for calm, two for breeze, three for gust/gale: strength is not colour-only.
+  const winds = [
+    { wind: 0, label: 'calm', ribbons: 1 },
+    { wind: -20, label: 'breeze ←', ribbons: 2 },
+    { wind: 60, label: 'gust →', ribbons: 3 },
+    { wind: -90, label: 'gale ←', ribbons: 3 },
+  ];
+  for (const { wind, label, ribbons } of winds) {
+    await page.evaluate((value) => {
+      (window as never as { __WORMAGE__: { engine: { wind: number } } }).__WORMAGE__.engine.wind = value;
+    }, wind);
+    await expect(gauge).toHaveAttribute('aria-label', `Wind: ${label}`);
+    await expect(gauge).toHaveClass(new RegExp(`wind-${label.split(' ')[0]}\\b`));
+    await expect(gauge.locator('.wind-ribbon')).toHaveCount(ribbons);
+    const mirrored = (await gauge.getAttribute('class'))?.includes('wind-left') ?? false;
+    expect(mirrored, `${label} direction`).toBe(wind < 0);
+  }
 
   for (const id of ['btn-pause', 'btn-left', 'btn-right', 'btn-jump', 'btn-fire', 'btn-end-turn']) {
     await expect(page.getByTestId(id)).toBeHidden();

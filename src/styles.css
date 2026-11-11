@@ -909,81 +909,78 @@ html:fullscreen {
 }
 
 .wind-gauge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  height: 10px;
-  margin-top: 6px;
-  color: var(--amber);
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 25px;
+  margin-top: 3px;
+  color: #96b9ad;
+  filter: drop-shadow(0 0 5px currentColor);
 }
 
-.wind-streak {
-  width: 6px;
-  height: 6px;
-  border-top: 2px solid currentColor;
-  border-right: 2px solid currentColor;
-  transform: rotate(45deg);
-  opacity: 0;
-  animation: wind-drift var(--wind-cycle, 1.6s) linear infinite;
+.wind-art {
+  width: 88px;
+  height: 25px;
+  overflow: visible;
+  transition: transform 220ms ease, color 220ms ease;
 }
 
-.wind-streak:nth-child(2) {
-  animation-delay: calc(var(--wind-cycle, 1.6s) * 0.25);
+.wind-ribbon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-dasharray: 7 5;
+  animation: wind-flow var(--wind-cycle, 1.8s) linear infinite;
 }
 
-.wind-streak:nth-child(3) {
-  animation-delay: calc(var(--wind-cycle, 1.6s) * 0.5);
+.wind-ribbon-main {
+  stroke-width: 2.6;
+  stroke-dasharray: 10 4;
 }
 
-.wind-streak:nth-child(4) {
-  animation-delay: calc(var(--wind-cycle, 1.6s) * 0.75);
+.wind-ribbon-back,
+.wind-ribbon-low {
+  opacity: 0.55;
+  animation-delay: -0.45s;
 }
 
-.wind-breeze {
-  --wind-cycle: 2.1s;
+.wind-arrow {
+  fill: currentColor;
+  opacity: 0.95;
 }
 
-.wind-gust {
-  --wind-cycle: 1.2s;
+.wind-spark {
+  fill: #f6df9a;
+  filter: drop-shadow(0 0 3px currentColor);
+  animation: wind-twinkle 1.4s ease-in-out infinite alternate;
 }
 
-.wind-gale {
-  --wind-cycle: 0.7s;
+.wind-calm { color: #93aaa4; --wind-cycle: 3.8s; }
+.wind-breeze { color: #9ee3c0; --wind-cycle: 2.1s; }
+.wind-gust { color: #f0c56f; --wind-cycle: 1.15s; }
+.wind-gale { color: #ff8a5b; --wind-cycle: 0.68s; }
+.wind-calm .wind-ribbon { animation: none; stroke-dasharray: none; opacity: 0.45; }
+.wind-calm .wind-spark { animation: none; opacity: 0.35; }
+.wind-breeze .wind-ribbon-back { opacity: 0.35; }
+.wind-gust .wind-ribbon-back,
+.wind-gale .wind-ribbon-back { opacity: 0.8; }
+.wind-gale .wind-ribbon { stroke-width: 3; }
+.wind-left .wind-art { transform: scaleX(-1); }
+
+@keyframes wind-flow {
+  to { stroke-dashoffset: -30; }
 }
 
-.wind-breeze .wind-streak:nth-child(n + 3),
-.wind-gust .wind-streak:nth-child(n + 4) {
-  display: none;
+@keyframes wind-twinkle {
+  from { opacity: 0.35; }
+  to { opacity: 1; }
 }
 
-.wind-calm .wind-streak {
-  animation: none;
-  opacity: 0.28;
-}
-
-.wind-calm .wind-streak:nth-child(n + 2) {
-  display: none;
-}
-
-.wind-left {
-  transform: scaleX(-1);
-}
-
-@keyframes wind-drift {
-  0% {
-    opacity: 0;
-    translate: -4px 0;
-  }
-
-  25%,
-  70% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-    translate: 6px 0;
+@media (prefers-reduced-motion: reduce) {
+  .wind-ribbon,
+  .wind-spark {
+    animation: none;
   }
 }
 
@@ -1837,11 +1834,5 @@ html:fullscreen {
   *::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
-  }
-
-  .wind-streak {
-    animation: none;
-    opacity: 0.75;
-    translate: 0;
   }
 }

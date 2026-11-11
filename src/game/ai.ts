@@ -402,9 +402,14 @@ function planDrop(
   const retreatX = chooseRetreat(terrain, pos, enemies, blast, safety, def.fuse ?? RETREAT_SECONDS);
   // Never plant a drop without a way out of its own blast.
   if (retreatX === null) return null;
+  const target = enemies.reduce((nearest, enemy) => {
+    const d = Math.hypot(enemy.x - pos.x, enemy.y - pos.y);
+    return d < nearest.d ? { enemy, d } : nearest;
+  }, { enemy: enemies[0], d: Infinity }).enemy;
   return {
     score: damageScore(blast.x, blast.y, weapon, worm, worms),
-    angle: -0.5,
+    // Drops ignore the angle in flight, but the worm and its weapon should face the enemy.
+    angle: target.x < pos.x ? mirrorAngle(-0.5) : -0.5,
     power: 0.5,
     retreatX,
   };

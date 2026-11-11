@@ -66,6 +66,7 @@ export function Hud({
   const activeWorm = snapshot.teams[snapshot.activeTeam]?.worms.find((w) => w.active);
   const fuseLeft = snapshot.fuseLeft === null ? null : Math.max(0, snapshot.fuseLeft);
   const inFlight = snapshot.phase !== 'aim';
+  const wind = windTier(snapshot.wind);
   const countdown = inFlight
     ? fuseLeft !== null
       ? fuseLeft.toFixed(1)
@@ -142,16 +143,23 @@ export function Hud({
             />
           </div>
           <div
-            className={`wind-gauge wind-${windTier(snapshot.wind)}${snapshot.wind < 0 ? ' wind-left' : ''}`}
+            className={`wind-gauge wind-${wind}${snapshot.wind < 0 ? ' wind-left' : ''}`}
             data-testid="hud-wind"
             role="img"
             aria-label={`Wind: ${windLabel(snapshot.wind)}`}
             title={`Wind: ${windLabel(snapshot.wind)}`}
           >
-            <span className="wind-streak" />
-            <span className="wind-streak" />
-            <span className="wind-streak" />
-            <span className="wind-streak" />
+            <svg className="wind-art" viewBox="0 0 88 25" aria-hidden="true" focusable="false">
+              {wind !== 'calm' && (
+                <path className="wind-ribbon wind-ribbon-back" d="M7 8 C20 3 27 13 39 8 S59 4 66 8" />
+              )}
+              <path className="wind-ribbon wind-ribbon-main" d="M4 15 C18 10 25 20 38 15 S58 11 69 15" />
+              {(wind === 'gust' || wind === 'gale') && (
+                <path className="wind-ribbon wind-ribbon-low" d="M10 21 C22 17 29 24 40 21 S56 18 63 21" />
+              )}
+              <path className="wind-arrow" d="M65 10 L76 15 L65 20 L68 15 Z" />
+              <circle className="wind-spark" cx="14" cy="15" r="1.3" />
+            </svg>
           </div>
         </div>
 
