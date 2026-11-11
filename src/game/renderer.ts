@@ -76,21 +76,26 @@ class WormView {
   private drawWorm(color: number, facing: number): void {
     const g = this.body;
     g.clear();
-    // shadow
-    g.ellipse(0, 1, 13, 4).fill({ color: 0x000000, alpha: 0.28 });
-    // body
+    // Ground shadow keeps the silhouette readable over both grass and dirt.
+    g.ellipse(0, 1, 13, 4).fill({ color: 0x000000, alpha: 0.3 });
+    // Rounded silhouette with a soft highlight for a more sculpted, toy-like read.
     g.roundRect(-11, -30, 22, 31, 10).fill(color);
     g.stroke({ width: 2, color: 0x15201f, alpha: 0.85 });
-    // belly
-    g.ellipse(0, -11, 7.5, 9).fill({ color: 0xffe9c9, alpha: 0.32 });
-    // band
-    g.rect(-11.5, -29, 23, 6).fill({ color: 0x101a1c, alpha: 0.55 });
-    // eyes
+    g.ellipse(-3.5, -27, 4.8, 1.6).fill({ color: 0xffffff, alpha: 0.28 });
+    g.ellipse(0, -11, 7.5, 9).fill({ color: 0xffe9c9, alpha: 0.3 });
+    // A team-colored belt makes identity survive even when team colors are similar.
+    g.roundRect(-10.5, -15, 21, 4, 2).fill({ color, alpha: 0.92 });
+    g.rect(-11.5, -29, 23, 5).fill({ color: 0x101a1c, alpha: 0.55 });
+    g.roundRect(-2.5, -15, 5, 4, 1.5).fill({ color: 0xf4ead7, alpha: 0.85 });
+    // Expressive eyes with small catchlights make the face readable at gameplay scale.
     g.circle(-4.4, -21, 4.4).fill(0xfdf6e6);
     g.circle(4.4, -21, 4.4).fill(0xfdf6e6);
     g.circle(-4.4 + facing * 1.5, -21, 2).fill(0x12181a);
     g.circle(4.4 + facing * 1.5, -21, 2).fill(0x12181a);
-    // brow
+    g.circle(-5.1 + facing * 1.5, -22, 0.75).fill(0xffffff);
+    g.circle(3.7 + facing * 1.5, -22, 0.75).fill(0xffffff);
+    g.moveTo(-2.5, -14).lineTo(0, -13).lineTo(2.5, -14).stroke({ width: 1.2, color: 0x35231d, alpha: 0.8 });
+    // Brow angle tracks facing to give the active worm a little attitude.
     g.moveTo(-7.5, -26.5).lineTo(-2.5, -25).stroke({ width: 1.4, color: 0x12181a, alpha: 0.8 });
     g.moveTo(7.5, -26.5).lineTo(2.5, -25).stroke({ width: 1.4, color: 0x12181a, alpha: 0.8 });
     this.lastFacing = facing;
@@ -493,15 +498,21 @@ export class ArenaRenderer {
         g.scale.set(blink);
       }
       if (Math.random() < 0.55) {
+        const trail = {
+          bazooka: { color: 0xffa34d, size: 2.8, life: 0.42 },
+          grenade: { color: 0xb8d77e, size: 1.9, life: 0.32 },
+          shotgun: { color: 0xf2d8b4, size: 1.2, life: 0.12 },
+          dynamite: { color: 0xff6b5b, size: 2.2, life: 0.38 },
+        }[p.weapon];
         this.particles.push({
           x: p.x,
           y: p.y,
           vx: (Math.random() - 0.5) * 26,
           vy: (Math.random() - 0.5) * 20 - 14,
-          life: p.weapon === 'shotgun' ? 0.12 : 0.4,
+          life: trail.life,
           maxLife: 0.45,
-          size: p.weapon === 'shotgun' ? 1.2 : 2.4,
-          color: p.weapon === 'bazooka' ? 0xffd166 : 0x9ee37d,
+          size: trail.size,
+          color: trail.color,
           gravity: -14,
           shape: 'circle',
           growth: 3,
