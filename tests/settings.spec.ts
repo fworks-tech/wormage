@@ -287,6 +287,8 @@ test('Escape closes Settings back to the pause card without resuming', async ({ 
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('settings-dialog')).toHaveCount(0);
   await expect(page.getByTestId('btn-resume')).toBeVisible();
+  // Focus goes back to the button that opened the panel, not to Resume.
+  await expect.poll(() => focusedText(page)).toBe('Settings');
 
   // A second Escape belongs to the pause card and resumes the match.
   await page.keyboard.press('Escape');
@@ -301,6 +303,38 @@ test('Escape closes Controls back to the pause card without resuming', async ({ 
   await expect(page.getByTestId('controls-dialog')).toBeVisible();
 
   await page.keyboard.press('Escape');
+  await expect(page.getByTestId('controls-dialog')).toHaveCount(0);
+  await expect(page.getByTestId('btn-resume')).toBeVisible();
+  await expect.poll(() => focusedText(page)).toBe('Controls');
+});
+
+test('focus that lands behind the dialog comes back inside it', async ({ page }) => {
+  await startMatch(page);
+  await page.keyboard.press('p');
+  await expect.poll(() => focusedText(page)).toBe('Resume');
+
+  await page.evaluate(() => {
+    const outside = document.createElement('button');
+    outside.id = 'outside-focus';
+    document.body.append(outside);
+    outside.focus();
+  });
+  await expect.poll(() => focusedText(page)).toBe('Resume');
+});
+
+test('fullscreen keeps Escape and the pause key closes the panel', async ({ page }) => {
+  await startMatch(page);
+  await page.keyboard.press('p');
+  await page.getByTestId('btn-controls').click();
+  await expect(page.getByTestId('controls-dialog')).toBeVisible();
+  expect(await page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
+
+  // Esc belongs to the browser while fullscreen, so the panel stays open.
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('controls-dialog')).toBeVisible();
+  await expect(page.getByTestId('btn-resume')).toHaveCount(0);
+
+  await page.keyboard.press('p');
   await expect(page.getByTestId('controls-dialog')).toHaveCount(0);
   await expect(page.getByTestId('btn-resume')).toBeVisible();
 });
@@ -351,4 +385,11 @@ test('Escape closes a panel on the New Game card', async ({ page }) => {
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('controls-dialog')).toHaveCount(0);
   await expect(page.getByTestId('btn-play')).toBeVisible();
+  await expect.poll(() => focusedText(page)).toBe('Controls');
+
+  await page.getByTestId('btn-settings').click();
+  await expect(page.getByTestId('settings-dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('settings-dialog')).toHaveCount(0);
+  await expect.poll(() => focusedText(page)).toBe('Settings');
 });

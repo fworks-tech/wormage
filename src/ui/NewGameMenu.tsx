@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { GameSettings } from '../game/types';
 import type { Bindings } from '../state/bindings';
 import { ControlsDialog } from './ControlsDialog';
@@ -21,6 +21,9 @@ export function NewGameMenu({ onStart, settings, onSaveSettings, bindings, onSav
   // The single-file build has no routes, so /project would leave the app.
   const hasRoutes = import.meta.env.MODE !== 'single';
   const [panel, setPanel] = useState<MenuPanel>(null);
+  // The card unmounts while a panel is open; its button takes focus back afterwards.
+  const lastPanel = useRef<MenuPanel>(null);
+  if (panel) lastPanel.current = panel;
   const dialogRef = useDialogFocus<HTMLDivElement>(true, panel ?? 'root');
 
   return (
@@ -60,6 +63,7 @@ export function NewGameMenu({ onStart, settings, onSaveSettings, bindings, onSav
                 className="ghost-btn"
                 onClick={() => setPanel('controls')}
                 data-testid="btn-controls"
+                autoFocus={lastPanel.current === 'controls'}
               >
                 Controls
               </button>
@@ -68,6 +72,7 @@ export function NewGameMenu({ onStart, settings, onSaveSettings, bindings, onSav
                 className="ghost-btn"
                 onClick={() => setPanel('settings')}
                 data-testid="btn-settings"
+                autoFocus={lastPanel.current === 'settings'}
               >
                 Settings
               </button>

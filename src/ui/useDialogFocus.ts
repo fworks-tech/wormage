@@ -4,19 +4,28 @@ const FOCUSABLE =
   'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
- * Moves focus into an open dialog, keeps Tab inside it and restores focus when
- * it closes. `focusKey` reruns the trap when the dialog swaps its contents,
- * such as the pause card opening Settings.
+ * Moves focus into an open dialog, keeps it there and returns it to where it
+ * came from when the dialog closes. `focusKey` reruns the trap when the dialog
+ * swaps its contents, such as the pause card opening Settings.
  */
 export function useDialogFocus<T extends HTMLElement>(active: boolean, focusKey: string) {
   const ref = useRef<T | null>(null);
+  const returnTo = useRef<HTMLElement | null>(null);
+  const wasActive = useRef(false);
 
   useEffect(() => {
     const node = ref.current;
-    if (!active || !node) return;
-    const returnTo = document.activeElement as HTMLElement | null;
+    if (!active || !node) {
+      wasActive.current = false;
+      return;
+    }
+    // A panel swap is not a new dialog; keep the target from the first open.
+    if (!wasActive.current) returnTo.current = document.activeElement as HTMLElement | null;
+    wasActive.current = true;
+
     const items = () => Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE));
-    items()[0]?.focus();
+    // Panel content that mounts with its own autoFocus keeps it.
+    if (!node.contains(document.activeElement)) items()[0]?.focus();
 
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Tab') return;
@@ -32,11 +41,17 @@ export function useDialogFocus<T extends HTMLElement>(active: boolean, focusKey:
         first.focus();
       }
     };
+    // Tab is not the only way out: anything focused behind the dialog comes back.
+    const onFocusIn = (event: FocusEvent) => {
+      if (!node.contains(event.target as Node)) items()[0]?.focus();
+    };
     node.addEventListener('keydown', onKey);
+    document.addEventListener('focusin', onFocusIn);
     return () => {
       node.removeEventListener('keydown', onKey);
-      // A panel swap unmounts the button that opened it; only restore live nodes.
-      if (returnTo?.isConnected) returnTo.focus();
+      document.removeEventListener('focusin', onFocusIn);
+      // A panel swap leaves the overlay mounted; only a close returns focus.
+      if (!node.isConnected && returnTo.current?.isConnected) returnTo.current.focus();
     };
   }, [active, focusKey]);
 
