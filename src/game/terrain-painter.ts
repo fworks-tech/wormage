@@ -25,9 +25,9 @@ export class TerrainPainter {
     const surface = (x: number): number => this.terrain.surfaceY(x);
 
     const dirt = ctx.createLinearGradient(0, 240, 0, WORLD_H);
-    dirt.addColorStop(0, '#7a5335');
-    dirt.addColorStop(0.35, '#5d3d28');
-    dirt.addColorStop(0.75, '#3a2519');
+    dirt.addColorStop(0, '#866044');
+    dirt.addColorStop(0.28, '#68452e');
+    dirt.addColorStop(0.68, '#40291e');
     dirt.addColorStop(1, '#1b100b');
     ctx.fillStyle = dirt;
 
@@ -45,16 +45,22 @@ export class TerrainPainter {
       ctx.fill();
     }
 
-    // Grass line, then a lighter highlight along the very top.
+    // Grass line, with a darker underside and a sunlit edge for stronger depth.
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#4f7a37';
-    ctx.lineWidth = 16;
+    ctx.strokeStyle = '#3f6332';
+    ctx.lineWidth = 18;
     ctx.beginPath();
-    ctx.moveTo(0, surface(0) + 4);
-    for (let x = 0; x <= WORLD_W; x += 6) ctx.lineTo(x, surface(x) + 4);
+    ctx.moveTo(0, surface(0) + 6);
+    for (let x = 0; x <= WORLD_W; x += 6) ctx.lineTo(x, surface(x) + 6);
     ctx.stroke();
-    ctx.strokeStyle = '#7bab4c';
-    ctx.lineWidth = 7;
+    ctx.strokeStyle = '#587f3d';
+    ctx.lineWidth = 13;
+    ctx.beginPath();
+    ctx.moveTo(0, surface(0) + 3);
+    for (let x = 0; x <= WORLD_W; x += 6) ctx.lineTo(x, surface(x) + 3);
+    ctx.stroke();
+    ctx.strokeStyle = '#91bd60';
+    ctx.lineWidth = 6;
     ctx.beginPath();
     ctx.moveTo(0, surface(0));
     for (let x = 0; x <= WORLD_W; x += 6) ctx.lineTo(x, surface(x));
@@ -63,30 +69,46 @@ export class TerrainPainter {
     for (const s of this.terrain.shelves) {
       ctx.beginPath();
       ctx.ellipse(s.x, s.y, s.rx, s.ry, 0, 0, Math.PI * 2);
-      ctx.fillStyle = '#5d3d28';
+      ctx.fillStyle = '#68452e';
       ctx.fill();
       ctx.beginPath();
-      ctx.ellipse(s.x, s.y - 4, s.rx - 3, s.ry - 5, 0, 0, Math.PI * 2);
-      ctx.fillStyle = '#4f7a37';
+      ctx.ellipse(s.x, s.y - 4, Math.max(1, s.rx - 3), Math.max(1, s.ry - 5), 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#587f3d';
       ctx.fill();
     }
 
-    // Dirt texture: pebbles and strata.
+    // Seeded grass tufts add a hand-painted edge without changing collision pixels.
+    ctx.lineCap = 'round';
+    for (let x = 8; x <= WORLD_W; x += 18) {
+      const bladeX = x + (rng() - 0.5) * 8;
+      const y = surface(bladeX) + 1;
+      const height = 4 + rng() * 5;
+      ctx.strokeStyle = rng() > 0.52 ? '#9fc66a' : '#547d3e';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(bladeX, y + 2);
+      ctx.lineTo(bladeX - 2 - rng() * 2, y - height);
+      ctx.moveTo(bladeX, y + 2);
+      ctx.lineTo(bladeX + 1 + rng() * 3, y - height * 0.72);
+      ctx.stroke();
+    }
+
+    // Dirt texture: small pebbles, warm mineral flecks and layered strata.
     for (let i = 0; i < 900; i += 1) {
       const x = rng() * WORLD_W;
       const top = surface(x);
       const y = top + 14 + rng() * (WORLD_H - top - 14);
       if (!this.terrain.isSolid(x, y)) continue;
       const shade = rng();
-      ctx.fillStyle = shade > 0.5 ? 'rgba(255,220,180,0.06)' : 'rgba(0,0,0,0.16)';
+      ctx.fillStyle = shade > 0.5 ? 'rgba(255,220,180,0.075)' : 'rgba(0,0,0,0.16)';
       ctx.beginPath();
       ctx.arc(x, y, 1 + rng() * 2.6, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.strokeStyle = 'rgba(0,0,0,0.13)';
     ctx.lineWidth = 2;
     for (let band = 0; band < 6; band += 1) {
       const offset = 150 + band * 78;
+      ctx.strokeStyle = band % 2 === 0 ? 'rgba(0,0,0,0.13)' : 'rgba(231,174,119,0.075)';
       ctx.beginPath();
       for (let x = 0; x <= WORLD_W; x += 24) {
         const y = surface(x) + offset + Math.sin(x * 0.012 + band) * 12;
