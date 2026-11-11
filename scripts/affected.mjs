@@ -72,8 +72,8 @@ const RULES = [
   { files: ['src/ui/NewGameMenu.tsx'], unit: [], e2e: UI_E2E },
   { files: ['src/ui/OptionsPanel.tsx'], unit: [], e2e: ['tests/menu.spec.ts', 'tests/settings.spec.ts'] },
   {
-    files: ['src/ui/Leaderboard.tsx', 'src/ui/MatchHistory.tsx', 'src/ui/ResultScreen.tsx'],
-    unit: [],
+    files: ['src/ui/Leaderboard.tsx', 'src/ui/MatchHistory.tsx', 'src/ui/ResultScreen.tsx', 'src/ui/resultLines.ts'],
+    unit: ['tests/unit/resultLines.test.ts'],
     e2e: ['tests/data.spec.ts', 'tests/menu.spec.ts'],
   },
   {

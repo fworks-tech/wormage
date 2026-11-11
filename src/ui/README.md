@@ -12,7 +12,8 @@ React renders menus, dialogs and the in-match HUD. It never owns gameplay state.
 | `useDialogFocus.ts` | moves focus into an open overlay, keeps it inside (Tab, Shift+Tab and stray focus) and returns it to the opener |
 | `Leaderboard.tsx` | paginated ranking table + shared `Pager` and `formatDuration` |
 | `MatchHistory.tsx` | the player's paginated match archive |
-| `ResultScreen.tsx` | outcome, score, stats, registration status and retry |
+| `ResultScreen.tsx` | outcome, preset line, score, meta line, copy/setup/replay actions, registration status and retry |
+| `resultLines.ts` | the deterministic win/defeat copy shown on the result card |
 | `GameView.tsx` | mounts engine + Pixi renderer, owns the loop, input, pause rules |
 | `Hud.tsx` | team panels, timer, wind, weapons, power, touch controls (hidden on a fine pointer) |
 | `WeaponIcon.tsx` | inline SVG weapon and rope art shared by the HUD and the briefing arsenal |
