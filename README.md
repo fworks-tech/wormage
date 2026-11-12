@@ -29,7 +29,7 @@ The [full story](docs/ABOUT.md) explains what exists today, what comes next and 
 | E2E | Playwright |
 | Build | Vite 6 |
 
-No game engine, no physics library, no third-party art. Terrain, worms, explosions and sound are generated at runtime.
+No game engine, no physics library. Terrain, explosions and sound are generated at runtime; the worms use a small bundled sprite atlas.
 
 ## Quick start
 
@@ -77,8 +77,10 @@ src/
     engine.ts  turn state machine, physics, damage, win conditions
     terrain.ts bitmask collision + destructible canvas
     ai.ts      ballistic solver used by both the CPU and the aim preview
-    renderer.ts Pixi scene graph, particles, camera shake
+    capybara-animation.ts frame layout and frame selection for the worm atlas
+    renderer.ts Pixi scene graph, sprites, particles, camera shake
     audio.ts   WebAudio synth (no asset files)
+  assets/      capybara sprite atlas (bundled)
   ui/          React screens and HUD
   api/         Axios client, TanStack hooks, mock server + types
   mocks/       MSW worker and handlers
@@ -116,7 +118,7 @@ The live build is [wormage.flabs.tech](https://wormage.flabs.tech). Vercel auto-
 
 ## Credits
 
-All artwork is drawn procedurally with PixiJS graphics and canvas gradients; all sound is synthesized at runtime. No Worms Armageddon assets are used — the project is a genre homage, not a reproduction of Team17's art.
+The worms use the bundled capybara sprite atlas in `src/assets/`; terrain, effects and HUD are drawn procedurally with PixiJS graphics and canvas gradients, and all sound is synthesized at runtime. No Worms Armageddon assets are used — the project is a genre homage, not a reproduction of Team17's art.
 
 ## License
 

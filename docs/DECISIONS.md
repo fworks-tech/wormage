@@ -8,7 +8,7 @@ Cross-cutting architecture decisions — hosting, AWS, online play, the content 
 
 A top-down shooter is a well-trodden demo: bullets, spawns and a score counter. Artillery asks for more interesting machinery — destructible geometry, ballistic arcs, wind, a turn state machine and an opponent that must plan — while still needing the same product scaffolding around it.
 
-**Cost:** more custom physics than a bullet-and-spawn loop, and no reusable art. Every visual is generated at runtime.
+**Cost:** more custom physics than a bullet-and-spawn loop, and no reusable art. Most visuals are generated at runtime; the worms use the bundled capybara atlas.
 
 ## 2. Terrain as a bitmask plus a canvas
 
@@ -52,12 +52,12 @@ The spec-style requirement is network-level mocking. Service workers do not exis
 **Why:** a timeout after the server committed must not create a duplicate leaderboard entry. Retrying is safe by construction.
 **Cost:** the client must generate the id before the first attempt, not per request.
 
-## 8. No external art or audio
+## 8. Bundled worm atlas, procedural everything else
 
-Terrain, worms, explosions, HUD and sounds are generated at runtime.
+The capybara sprite atlas ships in `src/assets`, and Vite bundles it (inlined in the single-file build). Terrain, effects, HUD and sounds are still generated at runtime.
 
-**Why:** licensing is unambiguous, the download is tiny, and the portfolio demonstrates canvas/graphics work instead of asset gathering.
-**Cost:** a real production game would hire an artist. The renderer is structured so sprite atlases can replace `WormView` and `drawProjectile` without touching the simulation.
+**Why:** the sprite sheet gives the worms a readable character at gameplay scale while keeping the rest free of licensing dependencies and a wider asset pipeline.
+**Cost:** the atlas and its 8 × 4 frame layout in `capybara-animation.ts` must change together. A real production game would hire an artist; the renderer still lets `WormView` or `drawProjectile` be replaced without touching the simulation.
 
 ## 9. Fixed 1280×720 world, letterboxed
 

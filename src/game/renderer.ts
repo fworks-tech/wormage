@@ -1,4 +1,4 @@
-import { Application, Container, Graphics, Sprite, Text, Texture, Ticker } from 'pixi.js';
+import { Application, Container, Graphics, Rectangle, Sprite, Text, Texture, Ticker } from 'pixi.js';
 import { AIM, WATER_Y, WEAPONS, WORM, WORLD_H, WORLD_W, windLabel } from './config';
 import { aimPoint } from './aim';
 import type { GameEngine } from './engine';
@@ -6,9 +6,55 @@ import type { GameEvent, GameSnapshot, WeaponId, Worm } from './types';
 import { previewFlight } from './ai';
 import { TerrainPainter } from './terrain-painter';
 import { paintSky } from './sky';
+import {
+  CAPYBARA_FRAME_COUNTS,
+  CAPYBARA_FRAME_SIZE,
+  type CapybaraAnimationName,
+  selectCapybaraFrame,
+} from './capybara-animation';
+import capybaraAtlasUrl from '../assets/capybara-atlas.png';
 
 const FONT_DISPLAY = 'Anton, Impact, sans-serif';
 const FONT_BODY = '"Space Grotesk", system-ui, sans-serif';
+const BAZOOKA_FRAME_SECONDS = 0.09;
+
+type CapybaraAnimations = Record<CapybaraAnimationName, Texture[]>;
+
+/** Match the sprite's in-cell foot line to the worm's ground point. */
+const CAPYBARA_LAYOUT: Record<CapybaraAnimationName, { scale: number; foot: number }> = {
+  walk: { scale: 0.42, foot: 88 },
+  jump: { scale: 0.42, foot: 88 },
+  bath: { scale: 0.42, foot: 88 },
+  attack: { scale: 0.68, foot: 74 },
+};
+
+async function loadCapybaraAnimations(): Promise<CapybaraAnimations> {
+  const image = new Image();
+  image.src = capybaraAtlasUrl;
+  await image.decode();
+  // skipCache: every renderer owns its source, so StrictMode's double mount cannot destroy the other's atlas.
+  const atlas = Texture.from(image, true);
+  const frames = (row: number, count: number): Texture[] =>
+    Array.from(
+      { length: count },
+      (_, column) =>
+        new Texture({
+          source: atlas.source,
+          frame: new Rectangle(
+            column * CAPYBARA_FRAME_SIZE.width,
+            row * CAPYBARA_FRAME_SIZE.height,
+            CAPYBARA_FRAME_SIZE.width,
+            CAPYBARA_FRAME_SIZE.height,
+          ),
+        }),
+    );
+  return {
+    walk: frames(0, CAPYBARA_FRAME_COUNTS.walk),
+    jump: frames(1, CAPYBARA_FRAME_COUNTS.jump),
+    bath: frames(2, CAPYBARA_FRAME_COUNTS.bath),
+    attack: frames(3, CAPYBARA_FRAME_COUNTS.attack),
+  };
+}
 
 interface Particle {
   x: number;
@@ -40,32 +86,38 @@ const PROJECTILE_TRAILS: Record<WeaponId, { color: number; size: number; life: n
 
 class WormView {
   readonly root = new Container();
-  private readonly body = new Graphics();
+  private readonly body: Sprite;
+  private readonly shadow = new Graphics();
+  private readonly animations: CapybaraAnimations;
   private readonly heldWeapon = new Graphics();
   private readonly bar = new Graphics();
   private readonly marker = new Graphics();
   private readonly label: Text;
   private readonly hpText: Text;
-  private lastFacing = 1;
+  private animationTime = 0;
+  private attackTimer = 0;
   private lastWeapon: WeaponId | null = null;
   private lastHp = -1;
   private lastActive = false;
   private bob = Math.random() * Math.PI * 2;
 
-  constructor(worm: Worm, color: number, name: string) {
-    this.body.pivot.set(0, -15);
-    this.body.position.set(0, -15);
-    this.root.addChild(this.body);
+  constructor(worm: Worm, color: number, animations: CapybaraAnimations) {
+    this.animations = animations;
+    this.body = new Sprite(animations.walk[0]);
+    this.body.anchor.set(0.5, CAPYBARA_LAYOUT.walk.foot / CAPYBARA_FRAME_SIZE.height);
+    this.body.scale.set(CAPYBARA_LAYOUT.walk.scale);
+    this.shadow.ellipse(0, 1, 18, 4).fill({ color: 0x000000, alpha: 0.3 });
+    this.root.addChild(this.shadow, this.body);
     this.root.addChild(this.heldWeapon);
     this.root.addChild(this.bar);
     this.root.addChild(this.marker);
     this.label = new Text({
-      text: name,
+      text: worm.name,
       style: {
         fontFamily: FONT_BODY,
         fontSize: 11,
         fontWeight: '600',
-        fill: 0xf4ead7,
+        fill: color,
         stroke: { color: 0x0d1114, width: 3 },
       },
     });
@@ -80,48 +132,56 @@ class WormView {
     this.hpText.anchor.set(0.5, 0);
     this.hpText.position.set(0, -43);
     this.root.addChild(this.hpText);
-
-    this.drawWorm(color, 1);
   }
 
-  private drawWorm(color: number, facing: number): void {
-    const g = this.body;
-    g.clear();
-    // Ground shadow keeps the silhouette readable over both grass and dirt.
-    g.ellipse(0, 1, 13, 4).fill({ color: 0x000000, alpha: 0.3 });
-    // Rounded silhouette with a soft highlight for a more sculpted, toy-like read.
-    g.roundRect(-11, -30, 22, 31, 10).fill(color);
-    g.stroke({ width: 2, color: 0x15201f, alpha: 0.85 });
-    g.ellipse(-3.5, -27, 4.8, 1.6).fill({ color: 0xffffff, alpha: 0.28 });
-    g.ellipse(0, -11, 7.5, 9).fill({ color: 0xffe9c9, alpha: 0.3 });
-    // A team-colored belt makes identity survive even when team colors are similar.
-    g.roundRect(-10.5, -15, 21, 4, 2).fill({ color, alpha: 0.92 });
-    g.rect(-11.5, -29, 23, 5).fill({ color: 0x101a1c, alpha: 0.55 });
-    g.roundRect(-2.5, -15, 5, 4, 1.5).fill({ color: 0xf4ead7, alpha: 0.85 });
-    // Expressive eyes with small catchlights make the face readable at gameplay scale.
-    g.circle(-4.4, -21, 4.4).fill(0xfdf6e6);
-    g.circle(4.4, -21, 4.4).fill(0xfdf6e6);
-    g.circle(-4.4 + facing * 1.5, -21, 2).fill(0x12181a);
-    g.circle(4.4 + facing * 1.5, -21, 2).fill(0x12181a);
-    g.circle(-5.1 + facing * 1.5, -22, 0.75).fill(0xffffff);
-    g.circle(3.7 + facing * 1.5, -22, 0.75).fill(0xffffff);
-    g.moveTo(-2.5, -14).lineTo(0, -13).lineTo(2.5, -14).stroke({ width: 1.2, color: 0x35231d, alpha: 0.8 });
-    // Brow angle tracks facing to give the active worm a little attitude.
-    g.moveTo(-7.5, -26.5).lineTo(-2.5, -25).stroke({ width: 1.4, color: 0x12181a, alpha: 0.8 });
-    g.moveTo(7.5, -26.5).lineTo(2.5, -25).stroke({ width: 1.4, color: 0x12181a, alpha: 0.8 });
-    this.lastFacing = facing;
+  playAttack(): void {
+    this.attackTimer = CAPYBARA_FRAME_COUNTS.attack * BAZOOKA_FRAME_SECONDS;
   }
 
-  sync(worm: Worm, color: number, active: boolean, canAct: boolean, dt: number, weapon: WeaponId): void {
+  sync(
+    worm: Worm,
+    active: boolean,
+    canAct: boolean,
+    dt: number,
+    weapon: WeaponId,
+    activeWormId: string | null,
+    moveDir: -1 | 0 | 1,
+  ): void {
     this.root.position.set(worm.x, worm.y);
     this.heldWeapon.position.set(0, -16);
     this.heldWeapon.rotation = worm.aimAngle;
     if (weapon !== this.lastWeapon) this.drawHeldWeapon(weapon);
     this.bob += dt * 4;
-    if (worm.facing !== this.lastFacing) this.drawWorm(color, worm.facing);
+    this.animationTime += dt;
+    this.attackTimer = Math.max(0, this.attackTimer - dt);
+    const attackFrame =
+      this.attackTimer > 0 && weapon === 'bazooka'
+        ? Math.min(
+            CAPYBARA_FRAME_COUNTS.attack - 1,
+            Math.floor(
+              (CAPYBARA_FRAME_COUNTS.attack * BAZOOKA_FRAME_SECONDS - this.attackTimer) /
+                BAZOOKA_FRAME_SECONDS,
+            ),
+          )
+        : null;
+    const selected = selectCapybaraFrame({
+      airborne: worm.airborne,
+      onGround: worm.onGround,
+      alive: worm.alive,
+      y: worm.y,
+      isActive: worm.id === activeWormId,
+      moveDir,
+      time: this.animationTime,
+      attackFrame,
+    });
+    const layout = CAPYBARA_LAYOUT[selected.animation];
+    this.body.texture = this.animations[selected.animation][selected.frame];
+    this.body.anchor.y = layout.foot / CAPYBARA_FRAME_SIZE.height;
+    this.body.scale.set(worm.facing * layout.scale, layout.scale);
     this.root.alpha = worm.alive ? 1 : 0;
     this.root.visible = worm.alive;
-    this.heldWeapon.visible = worm.alive && !worm.rope;
+    this.shadow.visible = worm.alive && worm.onGround;
+    this.heldWeapon.visible = worm.alive && !worm.rope && attackFrame === null;
 
     this.label.visible = worm.alive;
     this.hpText.visible = worm.alive;
@@ -237,7 +297,7 @@ export class ArenaRenderer {
   private offsetY = 0;
   private lastSnapshot: GameSnapshot | null = null;
 
-  private constructor(app: Application, engine: GameEngine) {
+  private constructor(app: Application, engine: GameEngine, capybaraAnimations: CapybaraAnimations) {
     this.app = app;
     this.engine = engine;
 
@@ -264,7 +324,7 @@ export class ArenaRenderer {
 
     for (const team of engine.teams) {
       for (const worm of team.worms) {
-        const view = new WormView(worm, team.color, worm.name);
+        const view = new WormView(worm, team.color, capybaraAnimations);
         this.wormViews.set(worm.id, view);
         this.wormLayer.addChild(view.root);
       }
@@ -276,6 +336,7 @@ export class ArenaRenderer {
   }
 
   static async create(host: HTMLElement, engine: GameEngine): Promise<ArenaRenderer> {
+    const capybaraAnimations = await loadCapybaraAnimations();
     const app = new Application();
     await app.init({
       resizeTo: host,
@@ -290,7 +351,7 @@ export class ArenaRenderer {
     app.canvas.style.width = '100%';
     app.canvas.style.height = '100%';
     app.canvas.style.touchAction = 'none';
-    return new ArenaRenderer(app, engine);
+    return new ArenaRenderer(app, engine, capybaraAnimations);
   }
 
   get canvas(): HTMLCanvasElement {
@@ -367,6 +428,9 @@ export class ArenaRenderer {
   handleEvent(event: GameEvent): void {
     switch (event.type) {
       case 'fire': {
+        if (event.weapon === 'bazooka' && this.lastSnapshot?.activeWormId) {
+          this.wormViews.get(this.lastSnapshot.activeWormId)?.playAttack();
+        }
         this.burst(event.x, event.y, 12, 0xffd166, 200, 'circle', 0.45);
         this.burst(event.x, event.y, 6, 0xfff3c4, 260, 'circle', 0.3);
         this.shake = Math.max(this.shake, 2.5);
@@ -540,7 +604,15 @@ export class ArenaRenderer {
         const active = worm.id === snapshot.activeWormId && !paused;
         const canAct = active && snapshot.phase === 'aim' && !team.isAi;
         const heldWeapon = worm.id === snapshot.activeWormId ? snapshot.weapon : 'bazooka';
-        view.sync(worm, team.color, active, canAct, paused ? 0 : dt, heldWeapon);
+        view.sync(
+          worm,
+          active,
+          canAct,
+          paused ? 0 : dt,
+          heldWeapon,
+          snapshot.activeWormId,
+          this.engine.moveDir,
+        );
       }
     }
 
